@@ -353,3 +353,12 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .doc .bullet::before { content: "•"; position: absolute; left: 2px; }
 .faq-title { margin-bottom: 4px; }
 @media (max-width: 640px) { .sns-row { flex-wrap: wrap; } .sns-row input { flex-basis: 100%; order: 3; } }
+
+/* 안내 창 · 입금 안내 */
+.modal { position: fixed; inset: 0; z-index: 60; background: rgba(15, 16, 20, .55); display: grid; place-items: center; padding: 16px; }
+.modal-box { background: #fff; border-radius: 18px; padding: 26px; width: 100%; max-width: 420px; }
+.modal-box h2 { font-size: 20px; margin-bottom: 14px; }
+.modal-box .btn { margin-top: 18px; }
+.bank-info { background: var(--soft); color: var(--ink); border-radius: 10px; padding: 14px 16px; font-weight: 700; margin-top: 10px; overflow-wrap: anywhere; }
+.bank-notice { margin-top: 10px; font-size: 14.5px; }
+.paid-box .bank-info { background: rgba(255, 255, 255, .7); }

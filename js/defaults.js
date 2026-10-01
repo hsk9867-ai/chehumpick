@@ -58,6 +58,8 @@ window.CHEHUMPICK_DEFAULTS = {
     '# 노쇼 발생 시',
     '노쇼 및 반복적인 일정 불이행이 확인된 참여자는 체험단 선정에서 제외되거나 일정 기간 참여가 제한될 수 있습니다.'
   ].join('\n'),
+  bankInfo: '입금 계좌: (관리자 페이지 > 사이트 설정 > 입금 안내에서 계좌를 입력해 주세요)',
+  bankNotice: '입금이 확인되면 공고 등록을 승인해 드립니다.',
   contactEmail: 'help@chehumpick.kr',
   categories: '맛집, 카페, 디저트, 주점',
   footerTagline: '좋은 경험이\n특별한 콘텐츠가 되는 곳',

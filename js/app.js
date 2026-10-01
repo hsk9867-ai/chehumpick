@@ -65,6 +65,18 @@
   const rows = text => lines(text).map(l => l.split('|').map(p => p.trim()));
   const cats = () => S.categories.split(',').map(c => c.trim()).filter(Boolean);
 
+  // 화면 가운데 안내 창 (확인 버튼으로 닫음)
+  function showModal(title, bodyHtml) {
+    closeModal();
+    const el = document.createElement('div');
+    el.className = 'modal';
+    el.innerHTML = `<div class="modal-box" role="dialog" aria-modal="true"><h2>${esc(title)}</h2>${bodyHtml}<button type="button" class="btn btn-dark btn-block btn-lg" data-action="close-modal">확인</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector('button').focus();
+  }
+  function closeModal() { document.querySelectorAll('.modal').forEach(m => m.remove()); }
+  const bankHtml = () => `<div class="bank-info">${nl2br(S.bankInfo)}</div><p class="bank-notice">${nl2br(S.bankNotice)}</p>`;
+
   let toastTimer;
   function toast(msg) {
     toastEl.textContent = msg;
@@ -245,7 +257,7 @@
     if (!c) return notFound();
     const u = Store.currentUser();
     const open = Store.isOpen(c);
-    const approvalNote = c.approval === 'pending' ? '<p class="paid-box">관리자 승인을 기다리는 글입니다. 승인되면 사이트에 게시됩니다.</p>'
+    const approvalNote = c.approval === 'pending' ? `<div class="paid-box">관리자 승인을 기다리는 글입니다. 승인되면 사이트에 게시됩니다.${u && u.id === c.ownerId ? bankHtml() : ''}</div>`
       : c.approval === 'rejected' ? '<p class="paid-box">반려된 글입니다. 내용을 수정해 저장하면 다시 등록 신청됩니다.</p>' : '';
     let action = '';
     if (!u) {
@@ -424,7 +436,7 @@
   function paidNotice(u) {
     return Store.isPaid(u)
       ? `<p class="paid-box ok">결제 확인됨 · 이용 기간 <b>${esc(u.paidUntil)}</b>까지</p>`
-      : `<p class="paid-box">등록 신청한 모집글은 <b>유선 결제 확인 후</b> 관리자가 수락하면 게시됩니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}<br>결제 문의: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></p>`;
+      : `<div class="paid-box">등록 신청한 모집글은 <b>입금 확인 후</b> 관리자가 승인하면 게시됩니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}${bankHtml()}</div>`;
   }
 
   function ownerMy(u) {
@@ -467,7 +479,7 @@
     <section class="container section form-page wide">
       <a class="back" href="#/${u.role === 'admin' ? 'admin' : 'my'}">← 돌아가기</a>
       <h1>${c ? '모집글 수정' : '모집글 등록 신청'}</h1>
-      ${c ? '' : '<p class="sub">등록 신청 후 관리자가 수락하면 사이트에 게시됩니다.</p>'}
+      ${c ? '' : '<p class="sub">등록 신청 후 입금 계좌를 안내해 드리며, 입금이 확인되면 관리자가 승인해 게시됩니다.</p>'}
       <form data-form="post" data-id="${c ? c.id : ''}" class="form" novalidate>
         <label>매장명 <i>*</i><input name="storeName" value="${c ? v('storeName') : esc(u.storeName || '')}" placeholder="매장명을 입력해 주세요"></label>
         <label>체험 메뉴 <i>*</i><input name="menu" value="${v('menu')}" placeholder="예: 황금치킨 + 수제맥주"></label>
@@ -666,6 +678,10 @@
       ['faq', '자주 묻는 질문 (한 줄에 하나씩: 질문 | 답변)', 9],
       ['contactEmail', '문의 이메일']
     ]],
+    ['입금 안내', [
+      ['bankInfo', '입금 계좌 안내 (은행, 계좌번호, 예금주, 금액 등. 모집글 등록 신청 직후 창으로 보여 줍니다)', 4],
+      ['bankNotice', '안내 문구', 2]
+    ]],
     ['카테고리 · 하단', [
       ['categories', '카테고리 (쉼표로 구분, 모집글 등록 화면과 목록 탭에 쓰입니다)'],
       ['footerTagline', '하단 문구', 2],
@@ -797,6 +813,7 @@
 
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
+    'close-modal': closeModal,
     logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
     cat: el => {
       state.cat = el.dataset.cat;
@@ -1011,6 +1028,7 @@
       state.pendingImage = null;
       toast(!old ? '등록 신청했습니다. 관리자 승인 후 게시됩니다.' : saved.approval === 'pending' && old.approval === 'rejected' ? '수정하고 다시 신청했습니다.' : '모집글을 수정했습니다.');
       go(saved.approval === 'approved' ? '/campaign/' + saved.id : u.role === 'admin' ? '/admin/campaigns' : '/my');
+      if (!old) showModal('등록 신청이 접수되었습니다', bankHtml());
     }
   };
 
