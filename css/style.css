@@ -362,3 +362,7 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .bank-info { background: var(--soft); color: var(--ink); border-radius: 10px; padding: 14px 16px; font-weight: 700; margin-top: 10px; overflow-wrap: anywhere; }
 .bank-notice { margin-top: 10px; font-size: 14.5px; }
 .paid-box .bank-info { background: rgba(255, 255, 255, .7); }
+
+.head-links { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+.second-title { margin-top: 44px; }
+.form input[readonly] { background: var(--soft); color: var(--muted); }

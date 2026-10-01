@@ -6,7 +6,7 @@
 
   const REGIONS = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
   const sidoOf = region => String(region || '').split(' ')[0];
-  const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타'];
+  const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타', '유튜브', '상관없음'];
   const SNS_TYPES = ['인스타그램', '네이버 블로그', '유튜브', '기타'];
   // 관리자가 바꿀 수 있는 영상·사진 자리: [키, 이름, 종류, 기본 파일]
   const MEDIA_SLOTS = [
@@ -115,7 +115,7 @@
     let html = link('/campaigns', '체험단') + link('/owner', '사장님 안내') + link('/faq', '고객센터');
     if (u) {
       html += u.role === 'admin' ? link('/admin', '관리자 페이지') : link('/my', '마이페이지');
-      html += `<span class="nav-user">${esc(u.name)}님 · ${ROLE_LABEL[u.role]}</span>`;
+      html += `<a class="nav-user" href="#/account" title="비밀번호 변경">${esc(u.name)}님 · ${ROLE_LABEL[u.role]}</a>`;
       html += `<button type="button" class="nav-btn" data-action="logout">로그아웃</button>`;
     } else {
       html += link('/login', '로그인') + link('/signup', '회원가입', 'nav-cta');
@@ -294,6 +294,7 @@
       </dl>
       <div class="block"><h2>체험 내용</h2><p>${nl2br(c.description)}</p></div>
       <div class="block"><h2>리뷰 조건</h2><p>${nl2br(c.conditions)}</p></div>
+      ${S.guide ? `<div class="block guide doc"><h2>${esc(S.guideTitle)}</h2>${richText(S.guide)}</div>` : ''}
       <div class="sticky-action">${action}</div>
     </section>`;
   }
@@ -314,6 +315,7 @@
         <button class="btn btn-dark btn-block btn-lg">로그인</button>
       </form>
       <p class="form-foot">아직 회원이 아니신가요? <a href="#/signup/influencer">인플루언서로 가입</a> · <a href="#/signup/owner">사장님으로 가입</a></p>
+      <p class="form-foot"><a href="#/find">아이디·비밀번호 찾기</a></p>
     </section>`;
   }
 
@@ -384,7 +386,7 @@
       if (a.status === 'applied') body = '<p class="note">사장님이 신청 내용을 확인하고 있습니다. 선정 결과는 이 화면에 표시됩니다.</p>';
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
-        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문 및 노쇼 안내 보기</a></div>
+        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
           <input type="url" name="url" placeholder="리뷰 게시물 주소 (https://...)" value="${esc(a.reviewUrl)}">
           <button class="btn btn-dark">리뷰 링크 제출</button>
@@ -403,7 +405,7 @@
     };
     return `
     <section class="container section narrow">
-      <div class="section-head"><h1>마이페이지</h1><a class="more" href="#/campaigns">체험단 더 찾아보기 ${ICON.arrow}</a></div>
+      <div class="section-head"><h1>마이페이지</h1><span class="head-links"><a class="more" href="#/account">비밀번호 변경</a><a class="more" href="#/campaigns">체험단 더 찾아보기 ${ICON.arrow}</a></span></div>
       ${snsCard(u)}
       <p class="sub">${esc(u.name)}님이 신청한 체험단 ${apps.length}건</p>
       ${apps.length ? apps.map(item).join('') : '<p class="empty">아직 신청한 체험단이 없습니다.<br><a href="#/campaigns">모집 중인 체험단 보러 가기</a></p>'}
@@ -459,7 +461,7 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></div>
+      <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">비밀번호 변경</a><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></span></div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
       ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a></p>'}
@@ -537,11 +539,12 @@
       body = `<div class="table-wrap"><table>
         <thead><tr><th>유형</th><th>이름</th><th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th>이용권 (유선 결제)</th><th></th></tr></thead>
         <tbody>${Store.users().map(u => `<tr>
-          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}</td><td>${esc(u.username)}</td><td>${esc(u.phone)}</td>
+          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}${Store.hasResetRequest(u.id) ? ' <span class="badge badge-wait">비밀번호 재설정 요청</span>' : ''}</td><td>${esc(u.username)}</td><td>${esc(u.phone)}</td>
           <td>${u.role === 'influencer' ? snsLinks(u) : esc(u.storeName || '-')}</td>
           <td>${esc(u.createdAt)}</td>
           <td class="nowrap">${u.role === 'owner' ? paidCell(u) : '<span class="muted">-</span>'}</td>
-          <td>${u.role === 'admin' ? '' : `<button class="btn btn-soft btn-sm danger" data-action="delete-user" data-id="${u.id}">삭제</button>`}</td>
+          <td class="nowrap">${u.role === 'admin' ? '' : `<button class="btn btn-soft btn-sm" data-action="reset-password" data-id="${u.id}">임시 비밀번호 발급</button>
+            <button class="btn btn-soft btn-sm danger" data-action="delete-user" data-id="${u.id}">삭제</button>`}</td>
         </tr>`).join('')}</tbody></table></div>`;
     } else if (state.adminTab === 'campaigns') {
       body = `<div class="table-wrap"><table>
@@ -620,6 +623,7 @@
     <section class="container section narrow">
       <h1>고객센터</h1>
       ${S.notice ? `<div class="notice doc" id="notice"><span class="badge badge-done">공지</span><h2>${esc(S.noticeTitle)}</h2>${richText(S.notice)}</div>` : ''}
+      ${S.guide ? `<div class="notice doc" id="guide"><span class="badge badge-done">안내</span><h2>${esc(S.guideTitle)}</h2>${richText(S.guide)}</div>` : ''}
       <h2 class="faq-title">자주 묻는 질문</h2>
       <p class="sub">${esc(S.faqIntro)}</p>
       <div class="faq">${rows(S.faq).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
@@ -674,6 +678,8 @@
     ['고객센터', [
       ['noticeTitle', '공지 제목'],
       ['notice', '공지 내용 (# 으로 시작하는 줄은 제목, * 로 시작하는 줄은 목록. 비우면 공지를 숨깁니다)', 12],
+      ['guideTitle', '체험 가이드 제목'],
+      ['guide', '체험 가이드 내용 (모집글 상세 화면과 고객센터에 표시. # 제목, * 목록. 비우면 숨깁니다)', 12],
       ['faqIntro', '자주 묻는 질문 안내 문구'],
       ['faq', '자주 묻는 질문 (한 줄에 하나씩: 질문 | 답변)', 9],
       ['contactEmail', '문의 이메일']
@@ -724,6 +730,45 @@
     </form>`;
   }
 
+  /* ---------- 계정: 비밀번호 변경 ---------- */
+  function account() {
+    const u = Store.currentUser();
+    return `
+    <section class="container section form-page">
+      <a class="back" href="#/${u.role === 'admin' ? 'admin' : 'my'}">← 돌아가기</a>
+      <h1>비밀번호 변경</h1>
+      <form data-form="password" class="form" novalidate>
+        <label>아이디<input value="${esc(u.username)}" autocomplete="username" readonly></label>
+        <label>현재 비밀번호<input type="password" name="current" autocomplete="current-password"></label>
+        <label>새 비밀번호<input type="password" name="next" autocomplete="new-password" placeholder="8자 이상"></label>
+        <label>새 비밀번호 확인<input type="password" name="next2" autocomplete="new-password"></label>
+        <button class="btn btn-dark btn-block btn-lg">비밀번호 변경</button>
+      </form>
+    </section>`;
+  }
+
+  /* ---------- 아이디·비밀번호 찾기 ---------- */
+  function find() {
+    return `
+    <section class="container section form-page">
+      <a class="back" href="#/login">← 로그인</a>
+      <h1>아이디 찾기</h1>
+      <form data-form="find-id" class="form" novalidate>
+        <label>이름<input name="name" autocomplete="name" placeholder="가입할 때 입력한 이름"></label>
+        <label>연락처<input type="tel" name="phone" autocomplete="tel" placeholder="가입할 때 입력한 연락처"></label>
+        <button class="btn btn-dark btn-block btn-lg">아이디 찾기</button>
+      </form>
+      <h1 class="second-title">비밀번호 찾기</h1>
+      <p class="sub">재설정을 요청하면, 가입할 때 등록한 연락처로 본인 확인 후 임시 비밀번호를 안내해 드립니다.</p>
+      <form data-form="find-pw" class="form" novalidate>
+        <label>아이디<input name="username" autocomplete="username" autocapitalize="none"></label>
+        <label>이름<input name="name" autocomplete="name"></label>
+        <label>연락처<input type="tel" name="phone" autocomplete="tel"></label>
+        <button class="btn btn-dark btn-block btn-lg">비밀번호 재설정 요청</button>
+      </form>
+    </section>`;
+  }
+
   const notFound = () => `<section class="container section narrow"><p class="empty">페이지를 찾을 수 없습니다.<br><a href="#/">메인으로 돌아가기</a></p></section>`;
   const denied = () => `<section class="container section narrow"><p class="empty">이 화면을 볼 수 있는 권한이 없습니다.<br><a href="#/">메인으로 돌아가기</a></p></section>`;
 
@@ -753,6 +798,8 @@
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
     [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
     [/^\/owner$/, ownerLanding],
+    [/^\/account$/, guard(['influencer', 'owner', 'admin'], account)],
+    [/^\/find$/, find],
     [/^\/faq$/, faq],
     [/^\/terms$/, terms],
     [/^\/privacy$/, privacy]
@@ -867,6 +914,16 @@
       const c = Store.campaign(el.dataset.id);
       await Store.setCampaignStatus(c.id, c.status === 'open' ? 'closed' : 'open');
       refresh();
+    },
+    'reset-password': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      const u = Store.user(el.dataset.id);
+      if (!u || !confirm(`${u.name}님(${u.username})에게 임시 비밀번호를 발급할까요?\n기존 비밀번호는 더 이상 쓸 수 없게 됩니다.\n\n먼저 등록된 연락처(${u.phone || '없음'})로 본인이 맞는지 확인해 주세요.`)) return;
+      const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+      const temp = Array.from(crypto.getRandomValues(new Uint8Array(10)), n => chars[n % chars.length]).join('');
+      await Store.adminResetPassword(u.id, temp);
+      refresh();
+      showModal('임시 비밀번호 발급', `<p>${esc(u.name)}님(${esc(u.username)})의 임시 비밀번호입니다.</p><div class="bank-info">${temp}</div><p class="bank-notice">회원에게 직접 알려 주고, 로그인 후 비밀번호를 변경하도록 안내해 주세요. 이 창을 닫으면 다시 볼 수 없습니다.</p>`);
     },
     'delete-user': async el => {
       if (!isAdmin()) return;
@@ -988,6 +1045,28 @@
       state.snsDraft = null;
       toast('SNS 채널을 저장했습니다.');
       refresh();
+    },
+    password: async f => {
+      if (!f.current.value) throw new Error('현재 비밀번호를 입력해 주세요.');
+      if (f.next.value.length < 8) throw new Error('새 비밀번호는 8자 이상으로 입력해 주세요.');
+      if (f.next.value !== f.next2.value) throw new Error('새 비밀번호가 서로 다릅니다.');
+      if (f.next.value === f.current.value) throw new Error('현재 비밀번호와 다른 비밀번호를 입력해 주세요.');
+      await Store.changePassword(f.current.value, f.next.value);
+      f.reset();
+      toast('비밀번호를 변경했습니다.');
+    },
+    'find-id': async f => {
+      if (!f.name.value.trim() || !f.phone.value.trim()) throw new Error('이름과 연락처를 입력해 주세요.');
+      const ids = await Store.findUsername(f.name.value, f.phone.value);
+      showModal('아이디 찾기', ids.length
+        ? `<p>입력하신 정보로 가입된 아이디입니다. 일부는 가려서 보여 드립니다.</p>${ids.map(id => `<div class="bank-info">${esc(id)}</div>`).join('')}`
+        : '<p>입력하신 이름과 연락처로 가입된 아이디를 찾지 못했습니다.</p>');
+    },
+    'find-pw': async f => {
+      if (!f.username.value.trim() || !f.name.value.trim() || !f.phone.value.trim()) throw new Error('아이디, 이름, 연락처를 모두 입력해 주세요.');
+      await Store.requestPasswordReset(f.username.value, f.name.value, f.phone.value);
+      f.reset();
+      showModal('비밀번호 재설정 요청', '<p>요청이 접수되었습니다. 입력하신 정보가 가입 정보와 일치하면, 가입할 때 등록한 연락처로 본인 확인 후 임시 비밀번호를 안내해 드립니다.</p>');
     },
     review: async f => {
       const url = f.url.value.trim();

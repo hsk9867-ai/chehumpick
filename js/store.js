@@ -17,7 +17,7 @@
   const today = () => ymd(new Date());
   const day = ts => ymd(new Date(ts));
 
-  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {} };
+  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {}, resetRequests: [] };
 
   // 서버 오류 문구를 화면용 문구로 바꿈 (권한 규칙이 보낸 한글 문구는 그대로 사용)
   function fail(error) {
@@ -76,6 +76,8 @@
       email: (contactOf[p.id] || {}).email, phone: (contactOf[p.id] || {}).phone, createdAt: day(p.created_at)
     }));
     cache.applications = ok(applications).map(toApplication);
+    // 비밀번호 재설정 요청 (관리자에게만 내려옴)
+    cache.resetRequests = uid ? ok(await sb.from('password_requests').select('user_id').eq('done', false)).map(r => r.user_id) : [];
     cache.meId = uid;
     // 관리자가 삭제한 계정 등 프로필이 없는 로그인은 정리
     if (uid && !cache.users.some(u => u.id === uid)) { await sb.auth.signOut(); cache.meId = null; }
@@ -134,6 +136,23 @@
     isPaid(u) { return !!(u && u.paidUntil && u.paidUntil >= today()); },
     async setPaid(id, until) { ok(await sb.rpc('admin_set_paid', { target: id, until: until || null })); return done(); },
     async updateSns(links) { ok(await sb.rpc('update_my_sns', { links })); return done(); },
+    // 현재 비밀번호를 확인한 뒤 새 비밀번호로 변경
+    async changePassword(current, next) {
+      const u = this.currentUser();
+      const check = await sb.auth.signInWithPassword({ email: toEmail(u.username), password: current });
+      if (check.error) throw new Error('현재 비밀번호가 올바르지 않습니다.');
+      ok(await sb.auth.updateUser({ password: next }));
+    },
+    // 아이디 찾기: 이름과 연락처가 일치하는 아이디(일부 가림) 목록
+    async findUsername(name, phone) { return ok(await sb.rpc('find_username', { p_name: name, p_phone: phone })); },
+    async requestPasswordReset(username, name, phone) {
+      ok(await sb.rpc('request_password_reset', { p_username: username, p_name: name, p_phone: phone }));
+    },
+    hasResetRequest(id) { return cache.resetRequests.includes(id); },
+    async adminResetPassword(id, password) {
+      ok(await sb.rpc('admin_reset_password', { target: id, new_password: password }));
+      return done();
+    },
     async deleteUser(id) { ok(await sb.rpc('admin_delete_user', { target: id })); return done(); },
 
     /* ---------- 모집글 ---------- */
