@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>체험픽 | 사장님과 리뷰어를 연결하는 체험단</title>
+  <meta name="description" content="체험픽은 매장 사장님과 인플루언서를 연결하는 체험단 매칭 사이트입니다.">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="#/">체험픽<span class="logo-spark" aria-hidden="true"></span></a>
+      <button class="nav-toggle" type="button" data-action="toggle-nav" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+
+  <main id="app"></main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <div class="logo logo-light">체험픽<span class="logo-spark" aria-hidden="true"></span></div>
+        <p class="footer-tagline">좋은 경험이<br>특별한 콘텐츠가 되는 곳</p>
+      </div>
+      <div class="footer-right">
+        <nav class="footer-links">
+          <a href="#/terms">이용약관</a>
+          <a href="#/privacy">개인정보처리방침</a>
+          <a href="#/faq">고객센터</a>
+        </nav>
+        <p class="copyright">© 2026 체험픽. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
