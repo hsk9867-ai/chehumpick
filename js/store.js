@@ -9,6 +9,8 @@
   const DEFAULT_SETTINGS = window.CHEHUMPICK_DEFAULTS;
   const MEDIA_PREFIX = 'media:';
   const PICKED = ['selected', 'submitted', 'done'];
+  // 로그인은 아이디로 받고, Supabase에는 내부용 주소로 바꿔 전달 (이 주소로 메일을 보내지 않음)
+  const toEmail = username => username.trim().toLowerCase() + '@id.chehumpick.kr';
 
   const pad = n => String(n).padStart(2, '0');
   const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -20,8 +22,9 @@
   // 서버 오류 문구를 화면용 문구로 바꿈 (권한 규칙이 보낸 한글 문구는 그대로 사용)
   function fail(error) {
     const msg = (error && error.message) || '';
-    if (/Invalid login credentials/i.test(msg)) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
-    if (/already registered|already been registered/i.test(msg)) throw new Error('이미 가입된 이메일입니다.');
+    if (/Invalid login credentials/i.test(msg)) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+    if (/already registered|already been registered/i.test(msg)) throw new Error('이미 사용 중인 아이디입니다.');
+    if (/profiles_username_key|Database error saving new user/i.test(msg)) throw new Error('이미 사용 중인 아이디입니다.');
     if (/applications_campaign_id_user_id_key/.test(msg)) throw new Error('이미 신청한 체험단입니다.');
     if (/row-level security/i.test(msg)) throw new Error('권한이 없거나 지금은 처리할 수 없습니다.');
     if (/Failed to fetch|NetworkError/i.test(msg)) throw new Error('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
@@ -68,7 +71,7 @@
     const contactOf = {};
     ok(contacts).forEach(c => { contactOf[c.user_id] = c; });
     cache.users = ok(profiles).map(p => ({
-      id: p.id, role: p.role, name: p.name, snsType: p.sns_type, snsUrl: p.sns_url, storeName: p.store_name,
+      id: p.id, role: p.role, name: p.name, username: p.username, snsType: p.sns_type, snsUrl: p.sns_url, storeName: p.store_name,
       snsLinks: Array.isArray(p.sns_links) ? p.sns_links : [], paidUntil: p.paid_until || null,
       email: (contactOf[p.id] || {}).email, phone: (contactOf[p.id] || {}).phone, createdAt: day(p.created_at)
     }));
@@ -99,8 +102,8 @@
     /* ---------- 회원 ---------- */
     currentUser() { return cache.users.find(u => u.id === cache.meId) || null; },
     // role을 넘기면 해당 유형의 회원만 로그인 (관리자는 어느 쪽에서든 가능)
-    async login(email, password, role) {
-      ok(await sb.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }));
+    async login(username, password, role) {
+      ok(await sb.auth.signInWithPassword({ email: toEmail(username), password }));
       await refresh();
       const u = this.currentUser();
       if (!u) throw new Error('삭제되었거나 사용할 수 없는 계정입니다.');
@@ -115,7 +118,7 @@
     async signup(data) {
       if (!['influencer', 'owner'].includes(data.role)) throw new Error('회원 유형을 선택해 주세요.');
       const res = ok(await sb.auth.signUp({
-        email: data.email.trim().toLowerCase(), password: data.password,
+        email: toEmail(data.username), password: data.password,
         options: { data: {
           role: data.role, name: data.name.trim(), phone: data.phone.trim(),
           snsType: data.snsType, snsUrl: (data.snsUrl || '').trim(), storeName: (data.storeName || '').trim()

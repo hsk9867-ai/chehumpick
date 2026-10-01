@@ -292,7 +292,7 @@
           <label><input type="radio" name="role" value="influencer" checked><span>🙋 인플루언서로 로그인<small>체험단에 신청해요</small></span></label>
           <label><input type="radio" name="role" value="owner"><span>👩‍🍳 사장님으로 로그인<small>체험단을 모집해요</small></span></label>
         </div>
-        <label>이메일<input type="email" name="email" autocomplete="email" placeholder="example@email.com"></label>
+        <label>아이디<input name="username" autocomplete="username" autocapitalize="none" placeholder="아이디"></label>
         <label>비밀번호<input type="password" name="password" autocomplete="current-password" placeholder="비밀번호"></label>
         <button class="btn btn-dark btn-block btn-lg">로그인</button>
       </form>
@@ -313,7 +313,7 @@
           <label><input type="radio" name="role" value="owner" ${owner ? 'checked' : ''}><span>👩‍🍳 사장님으로 가입<small>체험단을 모집해요</small></span></label>
         </div>
         <label>이름<input name="name" autocomplete="name" placeholder="이름"></label>
-        <label>이메일<input type="email" name="email" autocomplete="email" placeholder="example@email.com"></label>
+        <label>아이디<input name="username" autocomplete="username" autocapitalize="none" placeholder="영문 소문자·숫자 4~20자"></label>
         <label>비밀번호<input type="password" name="password" autocomplete="new-password" placeholder="8자 이상"></label>
         <label>연락처<input type="tel" name="phone" autocomplete="tel" placeholder="010-0000-0000"></label>
         <div class="only-influencer">
@@ -517,9 +517,9 @@
       body = siteSettings();
     } else if (state.adminTab === 'users') {
       body = `<div class="table-wrap"><table>
-        <thead><tr><th>유형</th><th>이름</th><th>이메일</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th>이용권 (유선 결제)</th><th></th></tr></thead>
+        <thead><tr><th>유형</th><th>이름</th><th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th>이용권 (유선 결제)</th><th></th></tr></thead>
         <tbody>${Store.users().map(u => `<tr>
-          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.phone)}</td>
+          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}</td><td>${esc(u.username)}</td><td>${esc(u.phone)}</td>
           <td>${u.role === 'influencer' ? snsLinks(u) : esc(u.storeName || '-')}</td>
           <td>${esc(u.createdAt)}</td>
           <td class="nowrap">${u.role === 'owner' ? paidCell(u) : '<span class="muted">-</span>'}</td>
@@ -915,21 +915,21 @@
 
   const forms = {
     login: async f => {
-      if (!f.email.value || !f.password.value) throw new Error('이메일과 비밀번호를 입력해 주세요.');
-      finishLogin(await Store.login(f.email.value, f.password.value, f.role.value));
+      if (!f.username.value.trim() || !f.password.value) throw new Error('아이디와 비밀번호를 입력해 주세요.');
+      finishLogin(await Store.login(f.username.value, f.password.value, f.role.value));
     },
     signup: async f => {
       const role = f.role.value;
       const need = (cond, msg) => { if (!cond) throw new Error(msg); };
       need(f.name.value.trim(), '이름을 입력해 주세요.');
-      need(/^\S+@\S+\.\S+$/.test(f.email.value.trim()), '올바른 이메일 주소를 입력해 주세요.');
+      need(/^[a-z0-9_]{4,20}$/.test(f.username.value.trim().toLowerCase()), '아이디는 영문 소문자, 숫자, 밑줄(_)로 4~20자로 입력해 주세요.');
       need(f.password.value.length >= 8, '비밀번호는 8자 이상으로 입력해 주세요.');
       need(/^[0-9-]{9,13}$/.test(f.phone.value.trim()), '연락처를 정확히 입력해 주세요.');
       if (role === 'influencer') need(/^https?:\/\/\S+\.\S+/.test(f.snsUrl.value.trim()), 'SNS 채널 주소를 https://로 시작하는 주소로 입력해 주세요.');
       else need(f.storeName.value.trim(), '매장명을 입력해 주세요.');
       need(f.agree.checked, '약관에 동의해 주세요.');
       const u = await Store.signup({
-        role, name: f.name.value, email: f.email.value, password: f.password.value, phone: f.phone.value,
+        role, name: f.name.value, username: f.username.value, password: f.password.value, phone: f.phone.value,
         snsType: f.snsType.value, snsUrl: f.snsUrl.value, storeName: f.storeName.value
       });
       finishLogin(u);
