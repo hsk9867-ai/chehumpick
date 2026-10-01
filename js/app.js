@@ -4,14 +4,16 @@
   const nav = document.getElementById('nav');
   const toastEl = document.getElementById('toast');
 
+  const REGIONS = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+  const sidoOf = region => String(region || '').split(' ')[0];
   const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타'];
   const SNS_TYPES = ['인스타그램', '네이버 블로그', '유튜브', '기타'];
   // 관리자가 바꿀 수 있는 영상·사진 자리: [키, 이름, 종류, 기본 파일]
   const MEDIA_SLOTS = [
     ['video1', '메인 영상 1', 'video', 'assets/video/food.mp4'],
     ['video2', '메인 영상 2', 'video', 'assets/video/cafe.mp4'],
-    ['video3', '메인 영상 3', 'video', 'assets/video/beauty.mp4'],
-    ['video4', '메인 영상 4', 'video', 'assets/video/stay.mp4'],
+    ['video3', '메인 영상 3', 'video', 'assets/video/food2.mp4'],
+    ['video4', '메인 영상 4', 'video', 'assets/video/cafe2.mp4'],
     ['poster', '메인 영상이 뜨기 전 보이는 사진', 'image', 'assets/video/poster.jpg'],
     ['listBg', '체험단 목록 상단 사진', 'image', 'assets/img/hero.jpg'],
     ['ownerBg', '사장님 안내 상단 사진', 'image', 'assets/img/owner.jpg']
@@ -45,7 +47,7 @@
   const STEPS =['applied', 'selected', 'submitted', 'done'];
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
-  const state = { cat: '전체', q: '', adminTab: 'apps', afterLogin: null, pendingImage: null };
+  const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', afterLogin: null, pendingImage: null };
 
   /* ---------- 공통 도구 ---------- */
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, ch =>
@@ -81,6 +83,11 @@
     check: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.500l2.800 2.800L16 9.500"/></svg>'
   };
 
+  // 회원의 SNS 채널 링크 목록
+  function snsLinks(u) {
+    const links = u.snsLinks && u.snsLinks.length ? u.snsLinks : (u.snsUrl ? [{ type: u.snsType, url: u.snsUrl }] : []);
+    return links.map(l => `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.type || '채널')}</a>`).join(' · ') || '<span class="muted">-</span>';
+  }
   const badge = status => `<span class="badge badge-${STATUS[status].cls}">${STATUS[status].label}</span>`;
   const openBadge = c => Store.isOpen(c)
     ? '<span class="badge badge-ok">모집 중</span>'
@@ -110,11 +117,20 @@
       `<button type="button" class="pill ${state.cat === c ? 'on' : ''}" data-action="cat" data-cat="${c}">${c}</button>`).join('')}</div>`;
   }
 
+  // 지역(시·도) 선택과 카테고리 탭
+  function filterBar() {
+    return `<div class="filter-row">
+      <select class="region-select" data-change="region" aria-label="지역 선택">${['전체'].concat(REGIONS).map(r =>
+        `<option value="${r}" ${state.region === r ? 'selected' : ''}>${r === '전체' ? '전체 지역' : r}</option>`).join('')}</select>
+      ${pills()}</div>`;
+  }
+
   function filtered(onlyOpen) {
     const q = state.q.trim().toLowerCase();
     return Store.campaigns()
       .filter(c => !onlyOpen || Store.isOpen(c))
       .filter(c => state.cat === '전체' || c.category === state.cat)
+      .filter(c => state.region === '전체' || sidoOf(c.region) === state.region)
       .filter(c => !q || [c.storeName, c.menu, c.region].join(' ').toLowerCase().includes(q))
       .sort((a, b) => Store.isOpen(b) - Store.isOpen(a));
   }
@@ -139,7 +155,7 @@
   function homeGrid() {
     const items = filtered(true).slice(0, 6);
     return items.length ? `<div class="grid">${items.map(card).join('')}</div>`
-      : '<p class="empty">이 카테고리에는 모집 중인 체험단이 아직 없습니다.</p>';
+      : '<p class="empty">조건에 맞는 모집 중인 체험단이 아직 없습니다.</p>';
   }
 
   function listResults() {
@@ -182,7 +198,7 @@
 
     <section class="container section">
       <div class="section-head"><h2>${esc(S.homeListTitle)}</h2><a href="#/campaigns" class="more">전체보기 ${ICON.arrow}</a></div>
-      ${pills()}
+      ${filterBar()}
       <div id="home-grid">${homeGrid()}</div>
     </section>
 
@@ -213,10 +229,10 @@
     </section>
     <section class="container section narrow">
       <label class="search">
-        <input type="search" id="search" placeholder="매장명, 메뉴, 지역으로 검색해 보세요" value="${esc(state.q)}">
+        <input type="search" id="search" placeholder="매장명, 메뉴, 시·군·구로 검색해 보세요" value="${esc(state.q)}">
         <span class="search-btn">${ICON.search}</span>
       </label>
-      ${pills()}
+      ${filterBar()}
       <div id="list-results" class="rows">${listResults()}</div>
     </section>`;
   }
@@ -321,6 +337,27 @@
       `<li class="${i < idx ? 'past' : i === idx ? 'now' : ''}">${STATUS[s].label}</li>`).join('')}</ol>`;
   }
 
+  // 인플루언서가 자기 SNS 채널을 여러 개 등록·수정
+  function snsCard(u) {
+    if (!state.snsDraft) state.snsDraft = (u.snsLinks.length ? u.snsLinks : [{ type: u.snsType || SNS_TYPES[0], url: u.snsUrl || '' }]).map(l => ({ type: l.type, url: l.url }));
+    return `<form data-form="sns" class="panel sns-form" novalidate>
+      <h3>내 SNS 채널</h3>
+      <p class="menu">사장님이 선정할 때 확인하는 채널입니다. 인스타그램, 블로그 등 최대 5개까지 등록할 수 있습니다.</p>
+      ${state.snsDraft.map((l, i) => `<div class="sns-row">
+        <select name="snsType${i}" aria-label="채널 종류">${SNS_TYPES.map(t => `<option ${t === l.type ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <input type="url" name="snsUrl${i}" value="${esc(l.url)}" placeholder="https://instagram.com/내계정" aria-label="채널 주소">
+        <button type="button" class="btn btn-soft btn-sm danger" data-action="sns-remove" data-index="${i}">삭제</button>
+      </div>`).join('')}
+      <div class="sns-actions"><button type="button" class="btn btn-soft btn-sm" data-action="sns-add">+ 채널 추가</button><button class="btn btn-dark btn-sm">저장</button></div>
+    </form>`;
+  }
+  // 입력 중인 SNS 채널 값을 화면에서 읽어 임시 보관
+  function readSnsDraft() {
+    const f = document.querySelector('form[data-form="sns"]');
+    if (!f || !state.snsDraft) return;
+    state.snsDraft = state.snsDraft.map((l, i) => ({ type: f['snsType' + i].value, url: f['snsUrl' + i].value.trim() }));
+  }
+
   function influencerMy(u) {
     const apps = Store.applicationsByUser(u.id);
     const item = a => {
@@ -330,7 +367,7 @@
       if (a.status === 'applied') body = '<p class="note">사장님이 신청 내용을 확인하고 있습니다. 선정 결과는 이 화면에 표시됩니다.</p>';
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
-        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요.</div>
+        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문 및 노쇼 안내 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
           <input type="url" name="url" placeholder="리뷰 게시물 주소 (https://...)" value="${esc(a.reviewUrl)}">
           <button class="btn btn-dark">리뷰 링크 제출</button>
@@ -350,6 +387,7 @@
     return `
     <section class="container section narrow">
       <div class="section-head"><h1>마이페이지</h1><a class="more" href="#/campaigns">체험단 더 찾아보기 ${ICON.arrow}</a></div>
+      ${snsCard(u)}
       <p class="sub">${esc(u.name)}님이 신청한 체험단 ${apps.length}건</p>
       ${apps.length ? apps.map(item).join('') : '<p class="empty">아직 신청한 체험단이 없습니다.<br><a href="#/campaigns">모집 중인 체험단 보러 가기</a></p>'}
     </section>`;
@@ -367,7 +405,7 @@
         const picked = ['selected', 'submitted', 'done'].includes(a.status);
         return `<tr>
           <td>${esc(inf.name)}</td>
-          <td><a href="${safeUrl(inf.snsUrl)}" target="_blank" rel="noopener">${esc(inf.snsType || '채널')} 보기</a></td>
+          <td>${snsLinks(inf)}</td>
           <td>${esc(a.createdAt)}</td>
           <td>${badge(a.status)}</td>
           <td>${picked ? esc(inf.phone) : '<span class="muted">선정 후 공개</span>'}</td>
@@ -375,6 +413,13 @@
             `<button class="btn ${dark ? 'btn-dark' : 'btn-soft'} btn-sm" data-action="owner-status" data-id="${a.id}" data-status="${to}" data-label="${label}">${label}</button>`).join(' ')}</td>
         </tr>`;
       }).join('')}</tbody></table></div>`;
+  }
+
+  // 사장님 이용권 안내: 유선 결제 후 관리자가 기간을 지정해야 모집글을 등록할 수 있음
+  function paidNotice(u) {
+    return Store.isPaid(u)
+      ? `<p class="paid-box ok">이용 중 · <b>${esc(u.paidUntil)}</b>까지 모집글을 등록할 수 있습니다.</p>`
+      : `<p class="paid-box">모집글 등록은 <b>유선 결제 확인 후</b> 이용할 수 있습니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}<br>결제 문의: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></p>`;
   }
 
   function ownerMy(u) {
@@ -397,9 +442,10 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1><a class="btn btn-dark" href="#/post/new">+ 모집글 등록</a></div>
+      <div class="section-head"><h1>사장님 마이페이지</h1>${Store.isPaid(u) ? '<a class="btn btn-dark" href="#/post/new">+ 모집글 등록</a>' : ''}</div>
+      ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
-      ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록하기</a></p>'}
+      ${mine.length ? mine.map(item).join('') : `<p class="empty">아직 등록한 모집글이 없습니다.${Store.isPaid(u) ? '<br><a href="#/post/new">첫 체험단 모집글 등록하기</a>' : ''}</p>`}
     </section>`;
   }
 
@@ -408,6 +454,7 @@
     const u = Store.currentUser();
     const c = id ? Store.campaign(id) : null;
     if (id && !c) return notFound();
+    if (!id && !Store.isPaid(u)) return `<section class="container section narrow"><h1>모집글 등록</h1>${paidNotice(u)}<a class="back" href="#/my">← 마이페이지로</a></section>`;
     if (c && u.role !== 'admin' && c.ownerId !== u.id) return denied();
     state.pendingImage = null;
     const v = k => esc(c ? c[k] : '');
@@ -424,7 +471,8 @@
           <label>모집 인원(명) <i>*</i><input type="number" name="capacity" min="1" value="${v('capacity')}" placeholder="10"></label>
         </div>
         <div class="cols">
-          <label>지역 <i>*</i><input name="region" value="${v('region')}" placeholder="예: 아산"></label>
+          <label>지역(시·도) <i>*</i><select name="regionSido"><option value="">선택</option>${opts(REGIONS, c && sidoOf(c.region))}</select></label>
+          <label>시·군·구 <i>*</i><input name="regionDetail" value="${esc(c ? (REGIONS.includes(sidoOf(c.region)) ? c.region.split(' ').slice(1).join(' ') : c.region) : '')}" placeholder="예: 아산시"></label>
           <label>카테고리<select name="category">${opts(c && !cats().includes(c.category) ? cats().concat(c.category) : cats(), c && c.category)}</select></label>
         </div>
         <div class="cols">
@@ -450,6 +498,17 @@
   }
 
   /* ---------- 8. 관리자 페이지 ---------- */
+  // 결제받음(기간 지정) / 결제받지않음을 계정별로 지정
+  function paidCell(u) {
+    const paid = Store.isPaid(u);
+    const next = new Date(); next.setMonth(next.getMonth() + 1);
+    const suggested = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+    return `<span class="badge ${paid ? 'badge-ok' : 'badge-no'}">${paid ? '결제받음' : u.paidUntil ? '기간 만료' : '결제받지않음'}</span>
+      <input type="date" class="paid-date" data-paid-date="${u.id}" value="${esc(paid ? u.paidUntil : suggested)}" min="${Store.today()}" aria-label="이용 종료일">
+      <button class="btn btn-dark btn-sm" data-action="set-paid" data-id="${u.id}">${paid ? '기간 변경' : '결제받음 처리'}</button>
+      ${u.paidUntil ? `<button class="btn btn-soft btn-sm danger" data-action="unset-paid" data-id="${u.id}">결제받지않음</button>` : ''}`;
+  }
+
   function admin(tab) {
     if (tab) state.adminTab = tab;
     const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글'], ['users', '회원'], ['site', '사이트 설정']];
@@ -458,11 +517,12 @@
       body = siteSettings();
     } else if (state.adminTab === 'users') {
       body = `<div class="table-wrap"><table>
-        <thead><tr><th>유형</th><th>이름</th><th>이메일</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th></th></tr></thead>
+        <thead><tr><th>유형</th><th>이름</th><th>이메일</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th>이용권 (유선 결제)</th><th></th></tr></thead>
         <tbody>${Store.users().map(u => `<tr>
           <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${esc(u.phone)}</td>
-          <td>${u.role === 'influencer' ? `<a href="${safeUrl(u.snsUrl)}" target="_blank" rel="noopener">${esc(u.snsType)}</a>` : esc(u.storeName || '-')}</td>
+          <td>${u.role === 'influencer' ? snsLinks(u) : esc(u.storeName || '-')}</td>
           <td>${esc(u.createdAt)}</td>
+          <td class="nowrap">${u.role === 'owner' ? paidCell(u) : '<span class="muted">-</span>'}</td>
           <td>${u.role === 'admin' ? '' : `<button class="btn btn-soft btn-sm danger" data-action="delete-user" data-id="${u.id}">삭제</button>`}</td>
         </tr>`).join('')}</tbody></table></div>`;
     } else if (state.adminTab === 'campaigns') {
@@ -490,7 +550,7 @@
           const inf = Store.user(a.userId) || {};
           return `<tr>
             <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
-            <td>${esc(inf.name)} <a class="muted" href="${safeUrl(inf.snsUrl)}" target="_blank" rel="noopener">(${esc(inf.snsType || 'SNS')})</a></td>
+            <td>${esc(inf.name)} · ${snsLinks(inf)}</td>
             <td>${esc(a.createdAt)}</td>
             <td>${badge(a.status)}</td>
             <td>${a.reviewUrl ? `<a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">링크 확인</a>` : '<span class="muted">-</span>'}</td>
@@ -539,6 +599,8 @@
     return `
     <section class="container section narrow">
       <h1>고객센터</h1>
+      ${S.notice ? `<div class="notice doc" id="notice"><span class="badge badge-done">공지</span><h2>${esc(S.noticeTitle)}</h2>${richText(S.notice)}</div>` : ''}
+      <h2 class="faq-title">자주 묻는 질문</h2>
       <p class="sub">${esc(S.faqIntro)}</p>
       <div class="faq">${rows(S.faq).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
       <div class="contact"><h3>문의하기</h3><p>해결되지 않은 문의는 아래 연락처로 보내 주세요.</p>
@@ -546,11 +608,17 @@
     </section>`;
   }
 
-  // 약관 본문: # 으로 시작하는 줄은 제목, 나머지는 문단. 기본 초안 그대로면 검토 안내를 함께 표시
+  // 본문 서식: # 으로 시작하는 줄은 제목, * 또는 - 로 시작하는 줄은 목록, 나머지는 문단
+  function richText(text) {
+    return lines(text).map(l => l.startsWith('#') ? `<h3>${esc(l.replace(/^#+\s*/, ''))}</h3>`
+      : /^[*-]\s+/.test(l) ? `<p class="bullet">${esc(l.replace(/^[*-]\s+/, ''))}</p>` : `<p>${esc(l)}</p>`).join('');
+  }
+
+  // 약관 본문. 기본 초안 그대로면 검토 안내를 함께 표시
   function docPage(title, key) {
     const draft = S[key] === Store.defaultSettings()[key]
       ? '<p class="draft">※ 표준 양식 기반 초안입니다. 운영자 검토 후 확정본으로 교체해 주세요.</p>' : '';
-    const body = lines(S[key]).map(l => l.startsWith('#') ? `<h3>${esc(l.replace(/^#+\s*/, ''))}</h3>` : `<p>${esc(l)}</p>`).join('');
+    const body = richText(S[key]);
     return `<section class="container section narrow doc"><h1>${title}</h1>${draft}${body}</section>`;
   }
   const terms = () => docPage('이용약관', 'terms');
@@ -584,7 +652,9 @@
       ['promiseNote', '약속 영역 손글씨 문구', 3]
     ]],
     ['고객센터', [
-      ['faqIntro', '안내 문구'],
+      ['noticeTitle', '공지 제목'],
+      ['notice', '공지 내용 (# 으로 시작하는 줄은 제목, * 로 시작하는 줄은 목록. 비우면 공지를 숨깁니다)', 12],
+      ['faqIntro', '자주 묻는 질문 안내 문구'],
       ['faq', '자주 묻는 질문 (한 줄에 하나씩: 질문 | 답변)', 9],
       ['contactEmail', '문의 이메일']
     ]],
@@ -667,6 +737,7 @@
   function render(keepScroll) {
     const path = location.hash.slice(1) || '/';
     S = Store.settings();
+    if (path !== '/my') state.snsDraft = null;
     document.querySelector('.footer-tagline').innerHTML = nl2br(S.footerTagline);
     document.querySelector('.copyright').textContent = S.copyright;
     let html = notFound();
@@ -771,6 +842,36 @@
       refresh();
     },
     'admin-tab': el => go('/admin/' + el.dataset.tab),
+    'set-paid': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      const u = Store.user(el.dataset.id);
+      const until = document.querySelector(`[data-paid-date="${el.dataset.id}"]`).value;
+      if (!u || !until || until < Store.today()) return toast('이용 종료일을 오늘 이후 날짜로 선택해 주세요.');
+      if (!confirm(`${u.name}님(${u.storeName || '매장명 없음'})을 ${until}까지 "결제받음"으로 처리할까요?`)) return;
+      await Store.setPaid(u.id, until);
+      toast('결제받음으로 처리했습니다.');
+      refresh();
+    },
+    'unset-paid': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      const u = Store.user(el.dataset.id);
+      if (!u || !confirm(`${u.name}님을 "결제받지않음"으로 바꿀까요?\n새 모집글을 등록할 수 없게 됩니다.`)) return;
+      await Store.setPaid(u.id, null);
+      toast('결제받지않음으로 처리했습니다.');
+      refresh();
+    },
+    'sns-add': () => {
+      readSnsDraft();
+      if (state.snsDraft.length >= 5) return toast('SNS 채널은 5개까지 등록할 수 있습니다.');
+      state.snsDraft.push({ type: SNS_TYPES[0], url: '' });
+      refresh();
+    },
+    'sns-remove': el => {
+      readSnsDraft();
+      if (state.snsDraft.length <= 1) return toast('SNS 채널은 1개 이상 있어야 합니다.');
+      state.snsDraft.splice(Number(el.dataset.index), 1);
+      refresh();
+    },
     'reset-media': async el => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const key = el.dataset.key;
@@ -845,6 +946,15 @@
       toast('사이트 설정을 저장했습니다.');
       refresh();
     },
+    sns: async () => {
+      readSnsDraft();
+      const links = state.snsDraft;
+      if (!links.every(l => /^https?:\/\/\S+\.\S+/.test(l.url))) throw new Error('SNS 채널 주소를 https://로 시작하는 주소로 입력해 주세요.');
+      await Store.updateSns(links);
+      state.snsDraft = null;
+      toast('SNS 채널을 저장했습니다.');
+      refresh();
+    },
     review: async f => {
       const url = f.url.value.trim();
       if (!/^https?:\/\/\S+\.\S+/.test(url)) throw new Error('리뷰 게시물 주소를 https://로 시작하는 주소로 입력해 주세요.');
@@ -859,13 +969,15 @@
       const id = f.dataset.id;
       const old = id ? Store.campaign(id) : null;
       if (!u || (old ? !canManage(id) : u.role !== 'owner')) throw new Error('권한이 없습니다.');
+      if (!old && !Store.isPaid(u)) throw new Error('모집글 등록은 유선 결제 확인 후 이용할 수 있습니다.');
       const need = (cond, msg) => { if (!cond) throw new Error(msg); };
       const t = k => f[k].value.trim();
       need(t('storeName'), '매장명을 입력해 주세요.');
       need(t('menu'), '체험 메뉴를 입력해 주세요.');
       need(Number(f.amount.value) > 0, '제공 금액을 입력해 주세요.');
       need(Number(f.capacity.value) >= 1, '모집 인원을 1명 이상으로 입력해 주세요.');
-      need(t('region'), '지역을 입력해 주세요.');
+      need(REGIONS.includes(f.regionSido.value), '지역(시·도)을 선택해 주세요.');
+      need(t('regionDetail'), '시·군·구를 입력해 주세요.');
       need(t('deadline'), '모집 마감일을 선택해 주세요.');
       need(t('periodStart') && t('periodEnd') && t('periodStart') <= t('periodEnd'), '체험 기간을 올바르게 선택해 주세요.');
       need(t('visitStart') && t('visitEnd') && t('visitStart') <= t('visitEnd'), '방문 가능 기간을 올바르게 선택해 주세요.');
@@ -875,7 +987,7 @@
       need(image, '대표 이미지를 1장 등록해 주세요.');
       const data = {
         storeName: t('storeName'), menu: t('menu'), amount: Number(f.amount.value), capacity: Number(f.capacity.value),
-        region: t('region'), category: f.category.value, channel: f.channel.value, deadline: t('deadline'),
+        region: f.regionSido.value + ' ' + t('regionDetail'), category: f.category.value, channel: f.channel.value, deadline: t('deadline'),
         periodStart: t('periodStart'), periodEnd: t('periodEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'),
         description: t('description'), conditions: t('conditions'), image
       };
@@ -963,6 +1075,13 @@
     const t = e.target;
     if (t.name === 'role' && t.form) t.form.dataset.role = t.value;
     if (t.dataset.change === 'media') changeMedia(t);
+    if (t.dataset.change === 'region') {
+      state.region = t.value;
+      const grid = document.getElementById('home-grid');
+      const rows = document.getElementById('list-results');
+      if (grid) grid.innerHTML = homeGrid();
+      if (rows) rows.innerHTML = listResults();
+    }
     if (t.id === 'post-image' && t.files[0]) {
       readImage(t.files[0]).then(data => {
         state.pendingImage = data;

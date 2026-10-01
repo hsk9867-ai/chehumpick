@@ -69,6 +69,7 @@
     ok(contacts).forEach(c => { contactOf[c.user_id] = c; });
     cache.users = ok(profiles).map(p => ({
       id: p.id, role: p.role, name: p.name, snsType: p.sns_type, snsUrl: p.sns_url, storeName: p.store_name,
+      snsLinks: Array.isArray(p.sns_links) ? p.sns_links : [], paidUntil: p.paid_until || null,
       email: (contactOf[p.id] || {}).email, phone: (contactOf[p.id] || {}).phone, createdAt: day(p.created_at)
     }));
     cache.applications = ok(applications).map(toApplication);
@@ -126,6 +127,10 @@
     },
     users() { return cache.users.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt)); },
     user(id) { return cache.users.find(u => u.id === id) || null; },
+    // 사장님 이용권: 관리자가 지정한 날짜까지 모집글 등록 가능
+    isPaid(u) { return !!(u && u.paidUntil && u.paidUntil >= today()); },
+    async setPaid(id, until) { ok(await sb.rpc('admin_set_paid', { target: id, until: until || null })); return done(); },
+    async updateSns(links) { ok(await sb.rpc('update_my_sns', { links })); return done(); },
     async deleteUser(id) { ok(await sb.rpc('admin_delete_user', { target: id })); return done(); },
 
     /* ---------- 모집글 ---------- */

@@ -333,3 +333,23 @@ td a.btn { color: var(--ink); text-decoration: none; }
 @media (max-width: 640px) { .media-slot { flex-direction: column; align-items: flex-start; } .media-slot video, .media-slot img { width: 100%; height: auto; aspect-ratio: 16 / 9; } }
 
 .loading { text-align: center; color: var(--muted); padding: 120px 16px; }
+
+/* 지역 선택 · 이용권 · SNS 채널 · 공지 */
+.filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+.filter-row .pills { margin-bottom: 0; padding-bottom: 0; min-width: 0; }
+.region-select { flex: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 14px; background: #fff; font-weight: 600; font-size: 14px; }
+.paid-box { background: #fff3cf; color: #6b4e00; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; font-size: 14.5px; }
+.paid-box.ok { background: #e2f5ec; color: #14794f; }
+.paid-box a { text-decoration: underline; }
+.paid-date { border: 1.5px solid var(--line); border-radius: 8px; padding: 4px 8px; margin: 0 4px; }
+.sns-form h3 { font-size: 17px; }
+.sns-row { display: flex; gap: 8px; margin-top: 10px; }
+.sns-row select, .sns-row input { border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 12px; background: #fff; }
+.sns-row input { flex: 1; min-width: 0; }
+.sns-actions { display: flex; justify-content: space-between; margin-top: 12px; }
+.notice { border: 1.5px solid var(--ink); border-radius: var(--radius); padding: 22px; margin: 18px 0 36px; }
+.notice h2 { margin-top: 10px; }
+.doc .bullet { padding-left: 16px; position: relative; }
+.doc .bullet::before { content: "•"; position: absolute; left: 2px; }
+.faq-title { margin-bottom: 4px; }
+@media (max-width: 640px) { .sns-row { flex-wrap: wrap; } .sns-row input { flex-basis: 100%; order: 3; } }
