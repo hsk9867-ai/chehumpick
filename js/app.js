@@ -6,7 +6,20 @@
 
   const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타'];
   const SNS_TYPES = ['인스타그램', '네이버 블로그', '유튜브', '기타'];
-  const HERO_CLIPS = ['food', 'cafe', 'beauty', 'stay'].map(n => `assets/video/${n}.mp4`);
+  // 관리자가 바꿀 수 있는 영상·사진 자리: [키, 이름, 종류, 기본 파일]
+  const MEDIA_SLOTS = [
+    ['video1', '메인 영상 1', 'video', 'assets/video/food.mp4'],
+    ['video2', '메인 영상 2', 'video', 'assets/video/cafe.mp4'],
+    ['video3', '메인 영상 3', 'video', 'assets/video/beauty.mp4'],
+    ['video4', '메인 영상 4', 'video', 'assets/video/stay.mp4'],
+    ['poster', '메인 영상이 뜨기 전 보이는 사진', 'image', 'assets/video/poster.jpg'],
+    ['listBg', '체험단 목록 상단 사진', 'image', 'assets/img/hero.jpg'],
+    ['ownerBg', '사장님 안내 상단 사진', 'image', 'assets/img/owner.jpg']
+  ];
+  const MAX_VIDEO_MB = 50;
+  const customMedia = {}; // 키 → 관리자가 올린 파일의 주소
+  const media = key => customMedia[key] || MEDIA_SLOTS.find(s => s[0] === key)[3];
+  const heroClips = () => MEDIA_SLOTS.filter(s => s[2] === 'video').map(s => media(s[0]));
   const STATUS = {
     applied: { label: '신청', inf: '선정 대기 중', cls: 'wait' },
     selected: { label: '선정', inf: '선정됨', cls: 'ok' },
@@ -153,7 +166,7 @@
 
   function home() {
     return `
-    <section class="hero" style="background-image:url('assets/video/poster.jpg')">
+    <section class="hero" style="background-image:url('${media('poster')}')">
       <div class="hero-media" aria-hidden="true">
         <video muted playsinline preload="auto"></video>
         <video muted playsinline preload="auto"></video>
@@ -196,7 +209,7 @@
   /* ---------- 체험단 목록 ---------- */
   function list() {
     return `
-    <section class="hero hero-sm" style="background-image:url('assets/img/hero.jpg')">
+    <section class="hero hero-sm" style="background-image:url('${media('listBg')}')">
       <div class="container"><h1>체험단</h1><p>다양한 매장의 체험단을 지금 바로 만나보세요.</p></div>
     </section>
     <section class="container section narrow">
@@ -514,7 +527,7 @@
       ? `<a class="btn btn-dark btn-lg" href="#/post/new">모집글 등록하기 ${ICON.arrow}</a>`
       : `<a class="btn btn-dark btn-lg" href="#/signup/owner">사장님으로 가입하기 ${ICON.arrow}</a>`;
     return `
-    <section class="hero hero-md" style="background-image:url('assets/img/owner.jpg')">
+    <section class="hero hero-md" style="background-image:url('${media('ownerBg')}')">
       <div class="container hero-inner">
         <div><h1>${esc(S.ownerTitle)}</h1><p>${nl2br(S.ownerSub)}</p></div>
         <p class="hand hero-note">${nl2br(S.ownerNote)}</p>
@@ -602,8 +615,24 @@
     const field = ([key, label, rowsN]) => `<label>${label}${rowsN
       ? `<textarea name="${key}" rows="${rowsN}">${esc(S[key])}</textarea>`
       : `<input name="${key}" value="${esc(S[key])}">`}</label>`;
+    const slot = ([key, label, kind]) => `<div class="media-slot">
+      ${kind === 'video'
+        ? `<video src="${esc(media(key))}" muted loop playsinline controls preload="metadata"></video>`
+        : `<img src="${esc(media(key))}" alt="">`}
+      <div>
+        <b>${label}</b> <span class="badge ${customMedia[key] ? 'badge-ok' : 'badge-no'}">${customMedia[key] ? '직접 올린 파일' : '기본'}</span>
+        <label class="btn btn-soft btn-sm">${kind === 'video' ? '영상' : '사진'} 바꾸기
+          <input type="file" hidden data-change="media" data-key="${key}" accept="${kind === 'video' ? 'video/mp4,video/webm' : 'image/*'}"></label>
+        ${customMedia[key] ? `<button type="button" class="btn btn-soft btn-sm danger" data-action="reset-media" data-key="${key}">기본으로 되돌리기</button>` : ''}
+      </div>
+    </div>`;
     return `
     <p class="draft">지금은 시연용이라 수정 내용이 이 브라우저에만 저장됩니다. 서버를 연결하면 모든 방문자 화면에 반영됩니다.</p>
+    <details class="setting-group settings-form" open>
+      <summary>영상 · 사진</summary>
+      <p class="note">파일을 고르면 확인 후 바로 반영됩니다. 영상은 MP4 또는 WebM, ${MAX_VIDEO_MB}MB 이하로 올려 주세요. 소리는 재생되지 않습니다.</p>
+      <div class="media-slots">${MEDIA_SLOTS.map(slot).join('')}</div>
+    </details>
     <form data-form="settings" class="form settings-form" novalidate>
       ${SETTING_GROUPS.map(([title, fields], i) => `<details class="setting-group" ${i === 0 ? 'open' : ''}>
         <summary>${title}</summary><div class="setting-fields">${fields.map(field).join('')}</div></details>`).join('')}
@@ -684,11 +713,12 @@
       const p = v.play();
       if (p) p.catch(() => {}); // 자동 재생이 막힌 환경에서는 포스터 이미지 유지
     };
-    start(vids[0], HERO_CLIPS[0]);
+    const clips = heroClips();
+    start(vids[0], clips[0]);
     heroTimer = setInterval(() => {
       if (!document.body.contains(box)) return clearInterval(heroTimer);
-      clip = (clip + 1) % HERO_CLIPS.length;
-      start(vids[1 - cur], HERO_CLIPS[clip]);
+      clip = (clip + 1) % clips.length;
+      start(vids[1 - cur], clips[clip]);
     }, 6000);
   }
 
@@ -758,6 +788,17 @@
       refresh();
     },
     'admin-tab': el => go('/admin/' + el.dataset.tab),
+    'reset-media': el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      const key = el.dataset.key;
+      if (!customMedia[key] || !confirm('올린 파일을 지우고 기본 파일로 되돌릴까요?')) return;
+      Store.media.remove(key).then(() => {
+        URL.revokeObjectURL(customMedia[key]);
+        delete customMedia[key];
+        toast('기본 파일로 되돌렸습니다.');
+        refresh();
+      }).catch(() => toast('되돌리지 못했습니다. 다시 시도해 주세요.'));
+    },
     'reset-settings': () => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       if (!confirm('수정한 문구를 모두 지우고 기본 문구로 되돌릴까요?')) return;
@@ -866,8 +907,34 @@
     }
   };
 
-  // 대표 이미지를 가로 900px 이하 JPEG로 줄여서 저장
-  function readImage(file) {
+  // 관리자가 고른 영상·사진을 확인 후 저장하고 화면에 반영
+  function changeMedia(input) {
+    const key = input.dataset.key;
+    const slot = MEDIA_SLOTS.find(s => s[0] === key);
+    const file = input.files[0];
+    input.value = '';
+    if (!isAdmin() || !slot || !file) return;
+    let ready;
+    if (slot[2] === 'video') {
+      if (!/^video\/(mp4|webm)$/.test(file.type)) return toast('MP4 또는 WebM 영상만 올릴 수 있습니다.');
+      if (file.size > MAX_VIDEO_MB * 1024 * 1024) return toast(`영상은 ${MAX_VIDEO_MB}MB 이하로 올려 주세요.`);
+      ready = Promise.resolve(file);
+    } else {
+      ready = readImage(file, 1600).then(data => fetch(data)).then(r => r.blob());
+    }
+    ready.then(blob => {
+      if (!confirm(`"${slot[1]}"을(를) 고른 파일로 바꿀까요?`)) return;
+      return Store.media.put(key, blob).then(() => {
+        if (customMedia[key]) URL.revokeObjectURL(customMedia[key]);
+        customMedia[key] = URL.createObjectURL(blob);
+        toast('바꿨습니다.');
+        refresh();
+      });
+    }).catch(err => toast(err && err.message && /이미지/.test(err.message) ? err.message : '파일을 저장하지 못했습니다. 용량을 줄여 다시 시도해 주세요.'));
+  }
+
+  // 이미지를 가로 max px 이하 JPEG로 줄여서 반환 (모집글 대표 이미지는 900px)
+  function readImage(file, max = 900) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'));
@@ -875,7 +942,7 @@
         const img = new Image();
         img.onerror = () => reject(new Error('이미지 파일만 등록할 수 있습니다.'));
         img.onload = () => {
-          const scale = Math.min(1, 900 / img.width);
+          const scale = Math.min(1, max / img.width);
           const cv = document.createElement('canvas');
           cv.width = Math.round(img.width * scale);
           cv.height = Math.round(img.height * scale);
@@ -909,6 +976,7 @@
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.name === 'role' && t.form) t.form.dataset.role = t.value;
+    if (t.dataset.change === 'media') changeMedia(t);
     if (t.id === 'post-image' && t.files[0]) {
       readImage(t.files[0]).then(data => {
         state.pendingImage = data;
@@ -918,5 +986,12 @@
   });
   window.addEventListener('hashchange', () => render());
 
-  render();
+  // 관리자가 올린 영상·사진을 먼저 불러온 뒤 첫 화면을 그림 (불러오지 못하면 기본 파일 사용)
+  // 저장소가 응답하지 않아도 1.5초 뒤에는 화면을 그림
+  let started = false;
+  const start = () => { if (!started) { started = true; render(); } };
+  setTimeout(start, 1500);
+  Promise.all(MEDIA_SLOTS.map(([key]) => Store.media.get(key).then(blob => {
+    if (blob) customMedia[key] = URL.createObjectURL(blob);
+  }))).catch(() => {}).then(() => (started ? render(true) : start()));
 })();

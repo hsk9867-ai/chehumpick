@@ -327,3 +327,10 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .setting-group summary { cursor: pointer; padding: 16px 0; font-weight: 700; font-size: 16.5px; color: var(--ink); }
 .setting-fields { display: grid; gap: 16px; padding-bottom: 20px; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: sticky; bottom: 0; background: #fff; padding: 14px 0; }
+.media-slots { display: grid; gap: 14px; padding: 14px 0 20px; }
+.media-slot { display: flex; gap: 16px; align-items: center; }
+.media-slot video, .media-slot img { width: 200px; height: 113px; object-fit: cover; border-radius: 10px; background: var(--soft); flex: none; }
+.media-slot > div { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.media-slot b { flex-basis: 100%; color: var(--ink); }
+.media-slot label.btn { cursor: pointer; }
+@media (max-width: 640px) { .media-slot { flex-direction: column; align-items: flex-start; } .media-slot video, .media-slot img { width: 100%; height: auto; aspect-ratio: 16 / 9; } }

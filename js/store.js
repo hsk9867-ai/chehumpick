@@ -322,5 +322,27 @@
     }
   };
 
+  /* ---------- 영상·사진 파일 ----------
+   * 용량이 커서 localStorage 대신 브라우저의 IndexedDB에 저장합니다. (키 → 파일) */
+  function mediaTx(mode, run) {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open('chehumpick-media', 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('files');
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const idb = open.result;
+        const tx = idb.transaction('files', mode);
+        const req = run(tx.objectStore('files'));
+        tx.oncomplete = () => { idb.close(); resolve(req.result); };
+        tx.onerror = tx.onabort = () => { idb.close(); reject(tx.error); };
+      };
+    });
+  }
+  Store.media = {
+    get: key => mediaTx('readonly', s => s.get(key)),
+    put: (key, blob) => mediaTx('readwrite', s => s.put(blob, key)),
+    remove: key => mediaTx('readwrite', s => s.delete(key))
+  };
+
   window.Store = Store;
 })();
