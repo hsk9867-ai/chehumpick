@@ -319,3 +319,11 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .hero-media video.on { opacity: 1; }
 .hero::before { z-index: 1; }
 .hero .container { z-index: 2; }
+
+/* 관리자: 사이트 설정 */
+.cta-blue h3 { color: var(--blue); }
+.settings-form { max-width: 760px; margin-top: 16px; }
+.setting-group { border: 1px solid var(--line); border-radius: var(--radius); padding: 0 18px; }
+.setting-group summary { cursor: pointer; padding: 16px 0; font-weight: 700; font-size: 16.5px; color: var(--ink); }
+.setting-fields { display: grid; gap: 16px; padding-bottom: 20px; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: sticky; bottom: 0; background: #fff; padding: 14px 0; }

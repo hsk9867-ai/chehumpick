@@ -4,11 +4,9 @@
   const nav = document.getElementById('nav');
   const toastEl = document.getElementById('toast');
 
-  const CATEGORIES = ['맛집', '카페', '뷰티', '숙박', '기타'];
   const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타'];
   const SNS_TYPES = ['인스타그램', '네이버 블로그', '유튜브', '기타'];
   const HERO_CLIPS = ['food', 'cafe', 'beauty', 'stay'].map(n => `assets/video/${n}.mp4`);
-  const CONTACT_EMAIL = 'help@chehumpick.kr'; // TODO: 실제 문의 연락처로 교체
   const STATUS = {
     applied: { label: '신청', inf: '선정 대기 중', cls: 'wait' },
     selected: { label: '선정', inf: '선정됨', cls: 'ok' },
@@ -46,6 +44,12 @@
   const range = (a, b) => `${md(a)} ~ ${md(b)}`;
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? esc(u) : '#');
   const go = path => { location.hash = '#' + path; };
+
+  // 사이트 설정(관리자가 고친 문구). 화면을 그릴 때마다 최신 값으로 갱신
+  let S = Store.settings();
+  const lines = text => String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const rows = text => lines(text).map(l => l.split('|').map(p => p.trim()));
+  const cats = () => S.categories.split(',').map(c => c.trim()).filter(Boolean);
 
   let toastTimer;
   function toast(msg) {
@@ -90,7 +94,7 @@
 
   /* ---------- 카드·목록 조각 ---------- */
   function pills() {
-    return `<div class="pills">${['전체'].concat(CATEGORIES).map(c =>
+    return `<div class="pills">${['전체'].concat(cats()).map(c =>
       `<button type="button" class="pill ${state.cat === c ? 'on' : ''}" data-action="cat" data-cat="${c}">${c}</button>`).join('')}</div>`;
   }
 
@@ -142,6 +146,11 @@
   }
 
   /* ---------- 1. 메인 ---------- */
+  function iconCards(text, cls) {
+    return rows(text).map(([icon, title, desc]) =>
+      `<div class="${cls}"><span>${esc(icon)}</span><h4>${esc(title)}</h4><p>${esc(desc)}</p></div>`).join('');
+  }
+
   function home() {
     return `
     <section class="hero" style="background-image:url('assets/video/poster.jpg')">
@@ -151,41 +160,36 @@
       </div>
       <div class="container hero-inner">
         <div>
-          <h1>맛집을 경험하고<br>나만의 콘텐츠로<br>남겨보세요!</h1>
-          <p>체험픽은 사장님과 리뷰어를 연결하는<br>체험단 플랫폼입니다.</p>
-          <a class="btn btn-yellow btn-lg" href="#/campaigns">체험단 둘러보기 ${ICON.arrow}</a>
+          <h1>${nl2br(S.heroTitle)}</h1>
+          <p>${nl2br(S.heroSub)}</p>
+          <a class="btn btn-yellow btn-lg" href="#/campaigns">${esc(S.heroButton)} ${ICON.arrow}</a>
         </div>
-        <p class="hand hero-note">좋은 경험이<br>특별한 콘텐츠가 되는 곳 :)</p>
+        <p class="hand hero-note">${nl2br(S.heroNote)}</p>
       </div>
     </section>
 
     <section class="container section">
-      <div class="section-head"><h2>지금 모집 중인 체험단</h2><a href="#/campaigns" class="more">전체보기 ${ICON.arrow}</a></div>
+      <div class="section-head"><h2>${esc(S.homeListTitle)}</h2><a href="#/campaigns" class="more">전체보기 ${ICON.arrow}</a></div>
       ${pills()}
       <div id="home-grid">${homeGrid()}</div>
     </section>
 
     <section class="container cta-pair">
       <div class="cta cta-blue">
-        <div><h3>리뷰어로 <b>참여하기</b></h3><p>맛집, 카페, 뷰티 등 다양한<br>체험단에 참여해 보세요!</p>
-        <a class="btn btn-blue" href="#/signup/influencer">리뷰어 가입하기 ${ICON.arrow}</a></div>
+        <div><h3>${esc(S.ctaInfTitle)}</h3><p>${nl2br(S.ctaInfText)}</p>
+        <a class="btn btn-blue" href="#/signup/influencer">${esc(S.ctaInfButton)} ${ICON.arrow}</a></div>
         <span class="cta-emoji" aria-hidden="true">🙋</span>
       </div>
       <div class="cta cta-pink">
-        <div><h3>사장님이신가요?</h3><p>체험단 모집부터 관리까지<br>체험픽이 도와드립니다.</p>
-        <a class="btn btn-pink" href="#/owner">사장님 안내 보기 ${ICON.arrow}</a></div>
+        <div><h3>${esc(S.ctaOwnerTitle)}</h3><p>${nl2br(S.ctaOwnerText)}</p>
+        <a class="btn btn-pink" href="#/owner">${esc(S.ctaOwnerButton)} ${ICON.arrow}</a></div>
         <span class="cta-emoji" aria-hidden="true">👩‍🍳</span>
       </div>
     </section>
 
     <section class="container section">
-      <h2>체험픽은 이런 점이 달라요!</h2>
-      <div class="features">
-        <div class="feature"><span>📷</span><h4>다양한 체험단</h4><p>맛집, 카페, 뷰티, 숙박 등 다양한 카테고리</p></div>
-        <div class="feature"><span>🛡️</span><h4>검증된 리뷰어</h4><p>SNS 채널을 확인하고 직접 선정</p></div>
-        <div class="feature"><span>💛</span><h4>간편한 신청</h4><p>복잡한 절차 없이 버튼 한 번으로 신청</p></div>
-        <div class="feature"><span>📍</span><h4>지역 기반 매칭</h4><p>아산·천안 지역 중심의 맞춤형 체험단</p></div>
-      </div>
+      <h2>${esc(S.featuresTitle)}</h2>
+      <div class="features">${iconCards(S.features, 'feature')}</div>
     </section>`;
   }
 
@@ -420,7 +424,7 @@
         </div>
         <div class="cols">
           <label>지역 <i>*</i><input name="region" value="${v('region')}" placeholder="예: 아산"></label>
-          <label>카테고리<select name="category">${opts(CATEGORIES, c && c.category)}</select></label>
+          <label>카테고리<select name="category">${opts(c && !cats().includes(c.category) ? cats().concat(c.category) : cats(), c && c.category)}</select></label>
         </div>
         <div class="cols">
           <label>체험단 유형<select name="channel">${opts(CHANNELS, c && c.channel)}</select></label>
@@ -445,10 +449,13 @@
   }
 
   /* ---------- 8. 관리자 페이지 ---------- */
-  function admin() {
-    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글'], ['users', '회원']];
+  function admin(tab) {
+    if (tab) state.adminTab = tab;
+    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글'], ['users', '회원'], ['site', '사이트 설정']];
     let body = '';
-    if (state.adminTab === 'users') {
+    if (state.adminTab === 'site') {
+      body = siteSettings();
+    } else if (state.adminTab === 'users') {
       body = `<div class="table-wrap"><table>
         <thead><tr><th>유형</th><th>이름</th><th>이메일</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th></th></tr></thead>
         <tbody>${Store.users().map(u => `<tr>
@@ -509,28 +516,18 @@
     return `
     <section class="hero hero-md" style="background-image:url('assets/img/owner.jpg')">
       <div class="container hero-inner">
-        <div><h1>사장님 안내</h1><p>체험픽과 함께<br>우리 매장 체험단을 모집해 보세요.</p></div>
-        <p class="hand hero-note">사장님의 매장이<br>더 많은 사람들에게<br>알려질 수 있도록!</p>
+        <div><h1>${esc(S.ownerTitle)}</h1><p>${nl2br(S.ownerSub)}</p></div>
+        <p class="hand hero-note">${nl2br(S.ownerNote)}</p>
       </div>
     </section>
     <section class="container section">
-      <div class="how">
-        <div><span>📣</span><h4>체험단 모집</h4><p>원하는 조건으로 모집글을 직접 등록해요.</p></div>
-        <div><span>👥</span><h4>참여자 선정</h4><p>신청자의 SNS 채널을 확인하고 선정해요.</p></div>
-        <div><span>🗓️</span><h4>방문 일정 안내</h4><p>선정된 리뷰어에게 방문 가능 기간이 안내돼요.</p></div>
-        <div><span>📝</span><h4>후기 확인</h4><p>리뷰 링크 제출과 완료까지 확인해요.</p></div>
-      </div>
+      <div class="how">${iconCards(S.ownerSteps, 'how-step')}</div>
       <div class="promise">
         <div>
-          <h2>체험픽이 드리는 약속</h2>
-          <ul>
-            <li>${ICON.check}지역 기반의 신뢰도 높은 리뷰어 매칭</li>
-            <li>${ICON.check}체험단 모집부터 완료까지 한 곳에서 관리</li>
-            <li>${ICON.check}실제 방문한 리뷰어의 퀄리티 높은 콘텐츠</li>
-            <li>${ICON.check}합리적인 비용으로 높은 마케팅 효과</li>
-          </ul>
+          <h2>${esc(S.promiseTitle)}</h2>
+          <ul>${lines(S.promises).map(p => `<li>${ICON.check}${esc(p)}</li>`).join('')}</ul>
         </div>
-        <p class="hand promise-note">사장님의<br>성공적인 마케팅을<br>응원합니다! :)</p>
+        <p class="hand promise-note">${nl2br(S.promiseNote)}</p>
       </div>
       <div class="center">${cta}</div>
     </section>`;
@@ -538,46 +535,83 @@
 
   /* ---------- 9~11. 안내 화면 ---------- */
   function faq() {
-    const qa = [
-      ['체험단은 어떻게 신청하나요?', '인플루언서로 회원가입한 뒤, 원하는 모집글 상세 화면에서 신청하기 버튼을 누르면 됩니다. 한 모집글에는 한 번만 신청할 수 있습니다.'],
-      ['선정 결과는 어디서 확인하나요?', '마이페이지의 신청 목록에서 진행 상태(선정 대기 중 · 선정됨 · 미선정)를 확인할 수 있습니다.'],
-      ['방문 일정은 어떻게 정하나요?', '선정되면 마이페이지에 방문 가능 기간이 표시됩니다. 기간 안에 매장과 연락해 방문해 주세요.'],
-      ['리뷰는 어떻게 제출하나요?', '방문 후 리뷰를 게시하고, 마이페이지에서 게시물 주소(링크)를 입력해 제출합니다. 관리자가 확인하면 완료 처리됩니다.'],
-      ['리뷰가 조건에 맞지 않으면 어떻게 되나요?', '관리자가 재제출을 요청하며, 마이페이지에서 링크를 다시 제출할 수 있습니다.'],
-      ['사장님은 어떻게 체험단을 모집하나요?', '사장님으로 회원가입한 뒤 마이페이지에서 모집글을 등록하고, 신청자의 SNS 채널을 확인해 선정하시면 됩니다.']
-    ];
     return `
     <section class="container section narrow">
       <h1>고객센터</h1>
-      <p class="sub">자주 묻는 질문을 먼저 확인해 보세요.</p>
-      <div class="faq">${qa.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div>
+      <p class="sub">${esc(S.faqIntro)}</p>
+      <div class="faq">${rows(S.faq).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
       <div class="contact"><h3>문의하기</h3><p>해결되지 않은 문의는 아래 연락처로 보내 주세요.</p>
-      <a class="btn btn-dark" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a></div>
+      <a class="btn btn-dark" href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></div>
     </section>`;
   }
 
-  const DRAFT = '<p class="draft">※ 표준 양식 기반 초안입니다. 운영자 검토 후 확정본으로 교체해 주세요.</p>';
-  function terms() {
-    return `<section class="container section narrow doc"><h1>이용약관</h1>${DRAFT}
-      <h3>제1조 (목적)</h3><p>이 약관은 체험픽(이하 "회사")이 제공하는 체험단 매칭 서비스(이하 "서비스")의 이용 조건과 절차, 회사와 회원의 권리·의무를 정하는 것을 목적으로 합니다.</p>
-      <h3>제2조 (회원의 종류)</h3><p>회원은 체험단에 신청하는 인플루언서 회원과 체험단을 모집하는 사장님 회원으로 구분합니다.</p>
-      <h3>제3조 (회원가입)</h3><p>회원가입은 이용자가 약관에 동의하고 가입 양식에 정보를 입력한 뒤 회사가 이를 승낙함으로써 성립합니다. 허위 정보를 입력한 경우 서비스 이용이 제한될 수 있습니다.</p>
-      <h3>제4조 (체험단 신청과 선정)</h3><p>인플루언서 회원은 모집글에 신청할 수 있으며, 선정 여부는 사장님 회원이 결정합니다. 선정된 회원은 방문 가능 기간 안에 매장을 방문하고 리뷰 조건에 맞는 콘텐츠를 게시해야 합니다.</p>
-      <h3>제5조 (리뷰 작성 의무)</h3><p>선정된 회원은 체험 후 정해진 기간 안에 리뷰 링크를 제출해야 하며, 관련 법령에 따라 경제적 대가를 받았음을 콘텐츠에 표시해야 합니다. 정당한 사유 없이 방문하지 않거나 리뷰를 제출하지 않으면 이후 이용이 제한될 수 있습니다.</p>
-      <h3>제6조 (모집글 등록)</h3><p>사장님 회원은 사실에 근거한 모집글을 등록해야 하며, 모집글에 적은 제공 내역을 선정된 회원에게 제공해야 합니다.</p>
-      <h3>제7조 (서비스의 변경·중단)</h3><p>회사는 운영상 필요한 경우 서비스의 전부 또는 일부를 변경하거나 중단할 수 있으며, 이 경우 사전에 공지합니다.</p>
-      <h3>제8조 (책임의 제한)</h3><p>회사는 회원 간의 매칭을 중개하며, 회원 사이에서 발생한 분쟁에 대해서는 회사의 고의 또는 중대한 과실이 없는 한 책임을 지지 않습니다.</p>
-    </section>`;
+  // 약관 본문: # 으로 시작하는 줄은 제목, 나머지는 문단. 기본 초안 그대로면 검토 안내를 함께 표시
+  function docPage(title, key) {
+    const draft = S[key] === Store.defaultSettings()[key]
+      ? '<p class="draft">※ 표준 양식 기반 초안입니다. 운영자 검토 후 확정본으로 교체해 주세요.</p>' : '';
+    const body = lines(S[key]).map(l => l.startsWith('#') ? `<h3>${esc(l.replace(/^#+\s*/, ''))}</h3>` : `<p>${esc(l)}</p>`).join('');
+    return `<section class="container section narrow doc"><h1>${title}</h1>${draft}${body}</section>`;
   }
-  function privacy() {
-    return `<section class="container section narrow doc"><h1>개인정보처리방침</h1>${DRAFT}
-      <h3>1. 수집하는 개인정보 항목</h3><p>공통: 이름, 이메일, 비밀번호, 연락처<br>인플루언서: SNS 채널 주소<br>사장님: 매장명</p>
-      <h3>2. 수집·이용 목적</h3><p>회원 식별 및 가입 관리, 체험단 신청·선정·진행 관리, 서비스 관련 안내와 문의 응대</p>
-      <h3>3. 보유 및 이용 기간</h3><p>회원 탈퇴 시까지 보유하며, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.</p>
-      <h3>4. 제3자 제공</h3><p>체험단 진행을 위해 인플루언서 회원의 이름, SNS 채널 주소, 연락처(선정 시)가 해당 모집글의 사장님 회원에게 제공됩니다. 그 밖에는 법령에 근거가 있는 경우를 제외하고 제3자에게 제공하지 않습니다.</p>
-      <h3>5. 이용자의 권리</h3><p>회원은 언제든지 본인의 개인정보 열람·정정·삭제를 요청할 수 있습니다.</p>
-      <h3>6. 개인정보 보호책임자</h3><p>문의: ${CONTACT_EMAIL}</p>
-    </section>`;
+  const terms = () => docPage('이용약관', 'terms');
+  const privacy = () => docPage('개인정보처리방침', 'privacy');
+
+  /* ---------- 관리자: 사이트 설정 ---------- */
+  // [키, 이름, 입력칸 줄 수(생략하면 한 줄)]
+  const SETTING_GROUPS = [
+    ['메인 화면', [
+      ['heroTitle', '첫 문구 (줄을 바꾸면 화면에서도 줄이 바뀝니다)', 3],
+      ['heroSub', '첫 문구 아래 설명', 2],
+      ['heroButton', '버튼 이름'],
+      ['heroNote', '손글씨 문구', 2],
+      ['homeListTitle', '모집글 목록 제목'],
+      ['ctaInfTitle', '리뷰어 안내 카드 제목'],
+      ['ctaInfText', '리뷰어 안내 카드 설명', 2],
+      ['ctaInfButton', '리뷰어 안내 카드 버튼'],
+      ['ctaOwnerTitle', '사장님 안내 카드 제목'],
+      ['ctaOwnerText', '사장님 안내 카드 설명', 2],
+      ['ctaOwnerButton', '사장님 안내 카드 버튼'],
+      ['featuresTitle', '특징 영역 제목'],
+      ['features', '특징 카드 (한 줄에 하나씩: 아이콘 | 제목 | 설명)', 5]
+    ]],
+    ['사장님 안내 화면', [
+      ['ownerTitle', '제목'],
+      ['ownerSub', '설명', 2],
+      ['ownerNote', '손글씨 문구', 3],
+      ['ownerSteps', '진행 단계 카드 (한 줄에 하나씩: 아이콘 | 제목 | 설명)', 5],
+      ['promiseTitle', '약속 영역 제목'],
+      ['promises', '약속 목록 (한 줄에 하나씩)', 5],
+      ['promiseNote', '약속 영역 손글씨 문구', 3]
+    ]],
+    ['고객센터', [
+      ['faqIntro', '안내 문구'],
+      ['faq', '자주 묻는 질문 (한 줄에 하나씩: 질문 | 답변)', 9],
+      ['contactEmail', '문의 이메일']
+    ]],
+    ['카테고리 · 하단', [
+      ['categories', '카테고리 (쉼표로 구분, 모집글 등록 화면과 목록 탭에 쓰입니다)'],
+      ['footerTagline', '하단 문구', 2],
+      ['copyright', '저작권 표시']
+    ]],
+    ['약관 · 개인정보처리방침', [
+      ['terms', '이용약관 (# 으로 시작하는 줄은 제목)', 16],
+      ['privacy', '개인정보처리방침 (# 으로 시작하는 줄은 제목)', 14]
+    ]]
+  ];
+
+  function siteSettings() {
+    const field = ([key, label, rowsN]) => `<label>${label}${rowsN
+      ? `<textarea name="${key}" rows="${rowsN}">${esc(S[key])}</textarea>`
+      : `<input name="${key}" value="${esc(S[key])}">`}</label>`;
+    return `
+    <p class="draft">지금은 시연용이라 수정 내용이 이 브라우저에만 저장됩니다. 서버를 연결하면 모든 방문자 화면에 반영됩니다.</p>
+    <form data-form="settings" class="form settings-form" novalidate>
+      ${SETTING_GROUPS.map(([title, fields], i) => `<details class="setting-group" ${i === 0 ? 'open' : ''}>
+        <summary>${title}</summary><div class="setting-fields">${fields.map(field).join('')}</div></details>`).join('')}
+      <div class="settings-actions">
+        <button class="btn btn-dark btn-lg">저장하기</button>
+        <button type="button" class="btn btn-soft danger" data-action="reset-settings">기본 문구로 되돌리기</button>
+      </div>
+    </form>`;
   }
 
   const notFound = () => `<section class="container section narrow"><p class="empty">페이지를 찾을 수 없습니다.<br><a href="#/">메인으로 돌아가기</a></p></section>`;
@@ -607,7 +641,7 @@
     [/^\/my$/, my],
     [/^\/post\/new$/, guard(['owner'], () => postForm())],
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
-    [/^\/admin$/, guard(['admin'], admin)],
+    [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
     [/^\/owner$/, ownerLanding],
     [/^\/faq$/, faq],
     [/^\/terms$/, terms],
@@ -616,6 +650,9 @@
 
   function render(keepScroll) {
     const path = location.hash.slice(1) || '/';
+    S = Store.settings();
+    document.querySelector('.footer-tagline').innerHTML = nl2br(S.footerTagline);
+    document.querySelector('.copyright').textContent = S.copyright;
     let html = notFound();
     for (const [re, view] of routes) {
       const m = path.match(re);
@@ -720,7 +757,14 @@
       toast('회원을 삭제했습니다.');
       refresh();
     },
-    'admin-tab': el => { state.adminTab = el.dataset.tab; refresh(); },
+    'admin-tab': el => go('/admin/' + el.dataset.tab),
+    'reset-settings': () => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      if (!confirm('수정한 문구를 모두 지우고 기본 문구로 되돌릴까요?')) return;
+      Store.resetSettings();
+      toast('기본 문구로 되돌렸습니다.');
+      refresh();
+    },
     'set-status': el => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const a = Store.applications().find(x => x.id === el.dataset.id);
@@ -767,6 +811,18 @@
         snsType: f.snsType.value, snsUrl: f.snsUrl.value, storeName: f.storeName.value
       });
       finishLogin(u);
+    },
+    settings: f => {
+      if (!isAdmin()) throw new Error('권한이 없습니다.');
+      const values = {};
+      SETTING_GROUPS.forEach(([, fields]) => fields.forEach(([key]) => { values[key] = f[key].value.replace(/\r\n/g, '\n').trim(); }));
+      if (!values.heroTitle) throw new Error('메인 첫 문구를 입력해 주세요.');
+      if (!values.categories.split(',').some(c => c.trim())) throw new Error('카테고리를 하나 이상 입력해 주세요.');
+      if (!/^\S+@\S+\.\S+$/.test(values.contactEmail)) throw new Error('문의 이메일을 올바르게 입력해 주세요.');
+      if (!confirm('수정한 내용을 사이트에 반영할까요?')) return;
+      Store.saveSettings(values);
+      toast('사이트 설정을 저장했습니다.');
+      refresh();
     },
     review: f => {
       const url = f.url.value.trim();
