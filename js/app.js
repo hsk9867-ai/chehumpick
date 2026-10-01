@@ -17,8 +17,7 @@
     ['ownerBg', '사장님 안내 상단 사진', 'image', 'assets/img/owner.jpg']
   ];
   const MAX_VIDEO_MB = 50;
-  const customMedia = {}; // 키 → 관리자가 올린 파일의 주소
-  const media = key => customMedia[key] || MEDIA_SLOTS.find(s => s[0] === key)[3];
+  const media = key => Store.media.url(key) || MEDIA_SLOTS.find(s => s[0] === key)[3];
   const heroClips = () => MEDIA_SLOTS.filter(s => s[2] === 'video').map(s => media(s[0]));
   const STATUS = {
     applied: { label: '신청', inf: '선정 대기 중', cls: 'wait' },
@@ -269,8 +268,6 @@
   /* ---------- 3. 로그인 ---------- */
   function login() {
     if (Store.currentUser()) { go('/my'); return ''; }
-    const demo = (label, email, pw) =>
-      `<button type="button" class="btn btn-soft btn-sm" data-action="demo-login" data-email="${email}" data-pw="${pw}">${label}</button>`;
     return `
     <section class="container section form-page">
       <h1>로그인</h1>
@@ -284,15 +281,6 @@
         <button class="btn btn-dark btn-block btn-lg">로그인</button>
       </form>
       <p class="form-foot">아직 회원이 아니신가요? <a href="#/signup/influencer">인플루언서로 가입</a> · <a href="#/signup/owner">사장님으로 가입</a></p>
-      <div class="demo-box">
-        <p><b>데모 계정으로 둘러보기</b> (시연용 · 오픈 시 삭제)</p>
-        <div class="demo-btns">
-          ${demo('인플루언서', 'review@chehumpick.kr', 'review1234')}
-          ${demo('사장님', 'owner@chehumpick.kr', 'owner1234')}
-          ${demo('관리자', 'admin@chehumpick.kr', 'admin1234')}
-        </div>
-        <button type="button" class="link-btn" data-action="reset-demo">데모 데이터 초기화</button>
-      </div>
     </section>`;
   }
 
@@ -620,14 +608,13 @@
         ? `<video src="${esc(media(key))}" muted loop playsinline controls preload="metadata"></video>`
         : `<img src="${esc(media(key))}" alt="">`}
       <div>
-        <b>${label}</b> <span class="badge ${customMedia[key] ? 'badge-ok' : 'badge-no'}">${customMedia[key] ? '직접 올린 파일' : '기본'}</span>
+        <b>${label}</b> <span class="badge ${Store.media.url(key) ? 'badge-ok' : 'badge-no'}">${Store.media.url(key) ? '직접 올린 파일' : '기본'}</span>
         <label class="btn btn-soft btn-sm">${kind === 'video' ? '영상' : '사진'} 바꾸기
           <input type="file" hidden data-change="media" data-key="${key}" accept="${kind === 'video' ? 'video/mp4,video/webm' : 'image/*'}"></label>
-        ${customMedia[key] ? `<button type="button" class="btn btn-soft btn-sm danger" data-action="reset-media" data-key="${key}">기본으로 되돌리기</button>` : ''}
+        ${Store.media.url(key) ? `<button type="button" class="btn btn-soft btn-sm danger" data-action="reset-media" data-key="${key}">기본으로 되돌리기</button>` : ''}
       </div>
     </div>`;
     return `
-    <p class="draft">지금은 시연용이라 수정 내용이 이 브라우저에만 저장됩니다. 서버를 연결하면 모든 방문자 화면에 반영됩니다.</p>
     <details class="setting-group settings-form" open>
       <summary>영상 · 사진</summary>
       <p class="note">파일을 고르면 확인 후 바로 반영됩니다. 영상은 MP4 또는 WebM, ${MAX_VIDEO_MB}MB 이하로 올려 주세요. 소리는 재생되지 않습니다.</p>
@@ -731,7 +718,7 @@
 
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
-    logout: () => { Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
+    logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
     cat: el => {
       state.cat = el.dataset.cat;
       document.querySelectorAll('.pill').forEach(p => p.classList.toggle('on', p.dataset.cat === state.cat));
@@ -740,69 +727,62 @@
       if (grid) grid.innerHTML = homeGrid();
       if (rows) rows.innerHTML = listResults();
     },
-    apply: el => {
+    apply: async el => {
       const u = me();
       if (!u) { state.afterLogin = '/campaign/' + el.dataset.id; toast('로그인 후 신청할 수 있습니다.'); return go('/login'); }
       if (u.role !== 'influencer') return toast('인플루언서 회원만 신청할 수 있습니다.');
-      Store.apply(el.dataset.id, u.id);
+      await Store.apply(el.dataset.id);
       toast('신청이 완료되었습니다. 마이페이지에서 진행 상태를 확인하세요.');
       refresh();
-    },
-    'demo-login': el => finishLogin(Store.login(el.dataset.email, el.dataset.pw)),
-    'reset-demo': () => {
-      if (!confirm('모든 데이터를 처음 상태로 되돌릴까요?')) return;
-      Store.reset(); toast('데모 데이터를 초기화했습니다.'); render();
     },
     'owner-status': el => {
       const u = me();
       const a = Store.applications().find(x => x.id === el.dataset.id);
       const c = a && Store.campaign(a.campaignId);
       if (!u || !c || c.ownerId !== u.id) return toast('권한이 없습니다.');
-      changeStatus(a, c, el, OWNER_BUTTONS);
+      return changeStatus(a, c, el, OWNER_BUTTONS);
     },
-    'close-selection': el => {
-      if (!canManage(el.dataset.id)) return toast('권한이 없습니다.');
+    'close-selection': async el => {
+      const c = Store.campaign(el.dataset.id);
+      if (!c || !me() || c.ownerId !== me().id) return toast('권한이 없습니다.');
       if (!confirm('선정을 마감할까요?\n아직 선정하지 않은 신청은 모두 미선정 처리되고 모집이 마감됩니다.')) return;
-      Store.closeSelection(el.dataset.id);
+      await Store.closeSelection(el.dataset.id);
       toast('선정을 마감했습니다.');
       refresh();
     },
-    'delete-campaign': el => {
+    'delete-campaign': async el => {
       if (!canManage(el.dataset.id)) return toast('권한이 없습니다.');
       if (!confirm('이 모집글을 삭제할까요?\n신청 내역도 함께 삭제되며 되돌릴 수 없습니다.')) return;
-      Store.deleteCampaign(el.dataset.id);
+      await Store.deleteCampaign(el.dataset.id);
       toast('모집글을 삭제했습니다.');
       if (/^#\/post\//.test(location.hash)) go(me().role === 'admin' ? '/admin' : '/my'); else refresh();
     },
-    'toggle-campaign': el => {
+    'toggle-campaign': async el => {
       if (!isAdmin()) return;
       const c = Store.campaign(el.dataset.id);
-      Store.setCampaignStatus(c.id, c.status === 'open' ? 'closed' : 'open');
+      await Store.setCampaignStatus(c.id, c.status === 'open' ? 'closed' : 'open');
       refresh();
     },
-    'delete-user': el => {
+    'delete-user': async el => {
       if (!isAdmin()) return;
       if (!confirm('이 회원을 삭제할까요?\n해당 회원의 모집글과 신청 내역도 함께 삭제됩니다.')) return;
-      Store.deleteUser(el.dataset.id);
+      await Store.deleteUser(el.dataset.id);
       toast('회원을 삭제했습니다.');
       refresh();
     },
     'admin-tab': el => go('/admin/' + el.dataset.tab),
-    'reset-media': el => {
+    'reset-media': async el => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const key = el.dataset.key;
-      if (!customMedia[key] || !confirm('올린 파일을 지우고 기본 파일로 되돌릴까요?')) return;
-      Store.media.remove(key).then(() => {
-        URL.revokeObjectURL(customMedia[key]);
-        delete customMedia[key];
-        toast('기본 파일로 되돌렸습니다.');
-        refresh();
-      }).catch(() => toast('되돌리지 못했습니다. 다시 시도해 주세요.'));
+      if (!Store.media.url(key) || !confirm('올린 파일을 지우고 기본 파일로 되돌릴까요?')) return;
+      await Store.media.remove(key);
+      toast('기본 파일로 되돌렸습니다.');
+      refresh();
     },
-    'reset-settings': () => {
+    'reset-settings': async () => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       if (!confirm('수정한 문구를 모두 지우고 기본 문구로 되돌릴까요?')) return;
-      Store.resetSettings();
+      await Store.resetSettings();
       toast('기본 문구로 되돌렸습니다.');
       refresh();
     },
@@ -810,16 +790,16 @@
       if (!isAdmin()) return toast('권한이 없습니다.');
       const a = Store.applications().find(x => x.id === el.dataset.id);
       if (!a) return;
-      changeStatus(a, Store.campaign(a.campaignId) || {}, el, ADMIN_BUTTONS);
+      return changeStatus(a, Store.campaign(a.campaignId) || {}, el, ADMIN_BUTTONS);
     }
   };
   // 허용된 상태 변경인지 확인하고, 확인 창을 거친 뒤 반영
-  function changeStatus(a, c, el, table) {
+  async function changeStatus(a, c, el, table) {
     const btn = table[a.status].find(([to]) => to === el.dataset.status);
     if (!btn) return toast('지금 상태에서는 처리할 수 없습니다.');
     const name = (Store.user(a.userId) || {}).name || '신청자';
     if (!confirm(`[${c.storeName || ''}] ${name}님을 "${btn[1]}" 처리할까요?`)) return;
-    Store.setApplicationStatus(a.id, btn[0]);
+    await Store.setApplicationStatus(a.id, btn[0]);
     toast(`"${btn[1]}" 처리했습니다.`);
     refresh();
   }
@@ -833,11 +813,11 @@
   }
 
   const forms = {
-    login: f => {
+    login: async f => {
       if (!f.email.value || !f.password.value) throw new Error('이메일과 비밀번호를 입력해 주세요.');
-      finishLogin(Store.login(f.email.value, f.password.value, f.role.value));
+      finishLogin(await Store.login(f.email.value, f.password.value, f.role.value));
     },
-    signup: f => {
+    signup: async f => {
       const role = f.role.value;
       const need = (cond, msg) => { if (!cond) throw new Error(msg); };
       need(f.name.value.trim(), '이름을 입력해 주세요.');
@@ -847,13 +827,13 @@
       if (role === 'influencer') need(/^https?:\/\/\S+\.\S+/.test(f.snsUrl.value.trim()), 'SNS 채널 주소를 https://로 시작하는 주소로 입력해 주세요.');
       else need(f.storeName.value.trim(), '매장명을 입력해 주세요.');
       need(f.agree.checked, '약관에 동의해 주세요.');
-      const u = Store.signup({
+      const u = await Store.signup({
         role, name: f.name.value, email: f.email.value, password: f.password.value, phone: f.phone.value,
         snsType: f.snsType.value, snsUrl: f.snsUrl.value, storeName: f.storeName.value
       });
       finishLogin(u);
     },
-    settings: f => {
+    settings: async f => {
       if (!isAdmin()) throw new Error('권한이 없습니다.');
       const values = {};
       SETTING_GROUPS.forEach(([, fields]) => fields.forEach(([key]) => { values[key] = f[key].value.replace(/\r\n/g, '\n').trim(); }));
@@ -861,20 +841,20 @@
       if (!values.categories.split(',').some(c => c.trim())) throw new Error('카테고리를 하나 이상 입력해 주세요.');
       if (!/^\S+@\S+\.\S+$/.test(values.contactEmail)) throw new Error('문의 이메일을 올바르게 입력해 주세요.');
       if (!confirm('수정한 내용을 사이트에 반영할까요?')) return;
-      Store.saveSettings(values);
+      await Store.saveSettings(values);
       toast('사이트 설정을 저장했습니다.');
       refresh();
     },
-    review: f => {
+    review: async f => {
       const url = f.url.value.trim();
       if (!/^https?:\/\/\S+\.\S+/.test(url)) throw new Error('리뷰 게시물 주소를 https://로 시작하는 주소로 입력해 주세요.');
       const a = Store.applications().find(x => x.id === f.dataset.id);
       if (!a || a.userId !== me().id) throw new Error('권한이 없습니다.');
-      Store.submitReview(a.id, url);
+      await Store.submitReview(a.id, url);
       toast('리뷰 링크를 제출했습니다. 관리자 확인 후 완료됩니다.');
       refresh();
     },
-    post: f => {
+    post: async f => {
       const u = me();
       const id = f.dataset.id;
       const old = id ? Store.campaign(id) : null;
@@ -899,8 +879,7 @@
         periodStart: t('periodStart'), periodEnd: t('periodEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'),
         description: t('description'), conditions: t('conditions'), image
       };
-      if (!old) data.ownerId = u.id;
-      const saved = Store.saveCampaign(data, id || undefined);
+      const saved = await Store.saveCampaign(data, id || undefined);
       state.pendingImage = null;
       toast(old ? '모집글을 수정했습니다.' : '모집글을 등록했습니다.');
       go('/campaign/' + saved.id);
@@ -924,13 +903,12 @@
     }
     ready.then(blob => {
       if (!confirm(`"${slot[1]}"을(를) 고른 파일로 바꿀까요?`)) return;
+      toast('올리는 중입니다…');
       return Store.media.put(key, blob).then(() => {
-        if (customMedia[key]) URL.revokeObjectURL(customMedia[key]);
-        customMedia[key] = URL.createObjectURL(blob);
         toast('바꿨습니다.');
         refresh();
       });
-    }).catch(err => toast(err && err.message && /이미지/.test(err.message) ? err.message : '파일을 저장하지 못했습니다. 용량을 줄여 다시 시도해 주세요.'));
+    }).catch(err => toast((err && err.message) || '파일을 저장하지 못했습니다.'));
   }
 
   // 이미지를 가로 max px 이하 JPEG로 줄여서 반환 (모집글 대표 이미지는 900px)
@@ -956,16 +934,24 @@
   }
 
   /* ---------- 이벤트 연결 ---------- */
+  let busy = false;
+  function run(task) {
+    if (busy) return;
+    busy = true;
+    Promise.resolve().then(task)
+      .catch(err => toast((err && err.message) || '처리하지 못했습니다.'))
+      .then(() => { busy = false; });
+  }
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-action]');
     if (!el) return;
-    try { actions[el.dataset.action](el); } catch (err) { toast(err.message); }
+    run(() => actions[el.dataset.action](el));
   });
   document.addEventListener('submit', e => {
     const f = e.target.closest('form[data-form]');
     if (!f) return;
     e.preventDefault();
-    try { forms[f.dataset.form](f); } catch (err) { toast(err.message); }
+    run(() => forms[f.dataset.form](f));
   });
   document.addEventListener('input', e => {
     if (e.target.id === 'search') {
@@ -984,14 +970,9 @@
       }).catch(err => { t.value = ''; toast(err.message); });
     }
   });
-  window.addEventListener('hashchange', () => render());
+  window.addEventListener('hashchange', () => Store.refresh().catch(() => {}).then(() => render()));
 
-  // 관리자가 올린 영상·사진을 먼저 불러온 뒤 첫 화면을 그림 (불러오지 못하면 기본 파일 사용)
-  // 저장소가 응답하지 않아도 1.5초 뒤에는 화면을 그림
-  let started = false;
-  const start = () => { if (!started) { started = true; render(); } };
-  setTimeout(start, 1500);
-  Promise.all(MEDIA_SLOTS.map(([key]) => Store.media.get(key).then(blob => {
-    if (blob) customMedia[key] = URL.createObjectURL(blob);
-  }))).catch(() => {}).then(() => (started ? render(true) : start()));
+  Store.init()
+    .catch(err => toast((err && err.message) || '서버에 연결하지 못했습니다.'))
+    .then(() => render());
 })();

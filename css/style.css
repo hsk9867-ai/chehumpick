@@ -211,9 +211,6 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .role-switch input:focus-visible + span { outline: 2px solid var(--yellow); }
 .form-foot { text-align: center; margin-top: 18px; color: var(--muted); font-size: 14px; }
 .form-foot a { color: var(--ink); font-weight: 700; text-decoration: underline; }
-.demo-box { margin-top: 28px; padding: 18px; border-radius: var(--radius); background: var(--soft); text-align: center; font-size: 14px; }
-.demo-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 12px 0; }
-.demo-btns .btn { background: #fff; border: 1px solid var(--line); }
 .image-preview img { max-height: 200px; border-radius: 10px; }
 .inline-form { display: flex; gap: 8px; margin-top: 12px; }
 .inline-form input { flex: 1; min-width: 0; }
@@ -334,3 +331,5 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .media-slot b { flex-basis: 100%; color: var(--ink); }
 .media-slot label.btn { cursor: pointer; }
 @media (max-width: 640px) { .media-slot { flex-direction: column; align-items: flex-start; } .media-slot video, .media-slot img { width: 100%; height: auto; aspect-ratio: 16 / 9; } }
+
+.loading { text-align: center; color: var(--muted); padding: 120px 16px; }
