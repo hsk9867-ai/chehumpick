@@ -89,8 +89,9 @@
     return links.map(l => `<a href="${safeUrl(l.url)}" target="_blank" rel="noopener">${esc(l.type || '채널')}</a>`).join(' · ') || '<span class="muted">-</span>';
   }
   const badge = status => `<span class="badge badge-${STATUS[status].cls}">${STATUS[status].label}</span>`;
-  const openBadge = c => Store.isOpen(c)
-    ? '<span class="badge badge-ok">모집 중</span>'
+  const openBadge = c => c.approval === 'pending' ? '<span class="badge badge-wait">승인 대기</span>'
+    : c.approval === 'rejected' ? '<span class="badge badge-no">반려</span>'
+    : Store.isOpen(c) ? '<span class="badge badge-ok">모집 중</span>'
     : '<span class="badge badge-no">모집 마감</span>';
 
   /* ---------- 헤더 ---------- */
@@ -128,6 +129,7 @@
   function filtered(onlyOpen) {
     const q = state.q.trim().toLowerCase();
     return Store.campaigns()
+      .filter(c => c.approval === 'approved')
       .filter(c => !onlyOpen || Store.isOpen(c))
       .filter(c => state.cat === '전체' || c.category === state.cat)
       .filter(c => state.region === '전체' || sidoOf(c.region) === state.region)
@@ -243,6 +245,8 @@
     if (!c) return notFound();
     const u = Store.currentUser();
     const open = Store.isOpen(c);
+    const approvalNote = c.approval === 'pending' ? '<p class="paid-box">관리자 승인을 기다리는 글입니다. 승인되면 사이트에 게시됩니다.</p>'
+      : c.approval === 'rejected' ? '<p class="paid-box">반려된 글입니다. 내용을 수정해 저장하면 다시 등록 신청됩니다.</p>' : '';
     let action = '';
     if (!u) {
       action = open ? `<button class="btn btn-dark btn-block btn-lg" data-action="apply" data-id="${c.id}">신청하기 ${ICON.arrow}</button>`
@@ -258,6 +262,7 @@
     return `
     <section class="container section narrow">
       <a class="back" href="#/campaigns">← 체험단 목록</a>
+      ${approvalNote}
       <div class="detail">
         <div class="detail-img"><img src="${esc(c.image)}" alt="${esc(c.storeName)}"></div>
         <div class="detail-head">
@@ -442,10 +447,10 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1>${Store.isPaid(u) ? '<a class="btn btn-dark" href="#/post/new">+ 모집글 등록</a>' : ''}</div>
+      <div class="section-head"><h1>사장님 마이페이지</h1>${Store.isPaid(u) ? '<a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a>' : ''}</div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
-      ${mine.length ? mine.map(item).join('') : `<p class="empty">아직 등록한 모집글이 없습니다.${Store.isPaid(u) ? '<br><a href="#/post/new">첫 체험단 모집글 등록하기</a>' : ''}</p>`}
+      ${mine.length ? mine.map(item).join('') : `<p class="empty">아직 등록한 모집글이 없습니다.${Store.isPaid(u) ? '<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a>' : ''}</p>`}
     </section>`;
   }
 
@@ -462,7 +467,8 @@
     return `
     <section class="container section form-page wide">
       <a class="back" href="#/${u.role === 'admin' ? 'admin' : 'my'}">← 돌아가기</a>
-      <h1>${c ? '모집글 수정' : '모집글 등록'}</h1>
+      <h1>${c ? '모집글 수정' : '모집글 등록 신청'}</h1>
+      ${c ? '' : '<p class="sub">등록 신청 후 관리자가 수락하면 사이트에 게시됩니다.</p>'}
       <form data-form="post" data-id="${c ? c.id : ''}" class="form" novalidate>
         <label>매장명 <i>*</i><input name="storeName" value="${c ? v('storeName') : esc(u.storeName || '')}" placeholder="매장명을 입력해 주세요"></label>
         <label>체험 메뉴 <i>*</i><input name="menu" value="${v('menu')}" placeholder="예: 황금치킨 + 수제맥주"></label>
@@ -491,7 +497,7 @@
         <label>리뷰 조건 <i>*</i><textarea name="conditions" rows="4" placeholder="예: 매장 방문 후 릴스 1건 업로드">${v('conditions')}</textarea></label>
         <label>대표 이미지 (1장) <i>*</i><input type="file" id="post-image" accept="image/*"></label>
         <div id="image-preview" class="image-preview">${c ? `<img src="${v('image')}" alt="현재 대표 이미지">` : ''}</div>
-        <button class="btn btn-dark btn-block btn-lg">${c ? '수정 내용 저장' : '모집글 등록하기'}</button>
+        <button class="btn btn-dark btn-block btn-lg">${c ? (c.approval === 'rejected' && u.role !== 'admin' ? '수정하고 다시 신청하기' : '수정 내용 저장') : '등록 신청하기'}</button>
         ${c ? `<button type="button" class="btn btn-soft btn-block danger" data-action="delete-campaign" data-id="${c.id}">이 모집글 삭제</button>` : ''}
       </form>
     </section>`;
@@ -511,7 +517,8 @@
 
   function admin(tab) {
     if (tab) state.adminTab = tab;
-    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글'], ['users', '회원'], ['site', '사이트 설정']];
+    const pending = Store.campaigns().filter(c => c.approval === 'pending').length;
+    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글' + (pending ? ` (승인 대기 ${pending})` : '')], ['users', '회원'], ['site', '사이트 설정']];
     let body = '';
     if (state.adminTab === 'site') {
       body = siteSettings();
@@ -528,13 +535,15 @@
     } else if (state.adminTab === 'campaigns') {
       body = `<div class="table-wrap"><table>
         <thead><tr><th>매장명</th><th>사장님</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
-        <tbody>${Store.campaigns().map(c => `<tr>
+        <tbody>${Store.campaigns().sort((a, b) => (b.approval === 'pending') - (a.approval === 'pending')).map(c => `<tr>
           <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
           <td>${esc((Store.user(c.ownerId) || {}).name || '-')}</td>
           <td>${openBadge(c)}</td><td>${esc(c.deadline)}</td>
           <td>${Store.applicationsByCampaign(c.id).length}명</td><td>${Store.pickedCount(c.id)}/${c.capacity}명</td>
           <td class="nowrap">
-            <button class="btn btn-soft btn-sm" data-action="toggle-campaign" data-id="${c.id}">${c.status === 'open' ? '마감 처리' : '모집 재개'}</button>
+            ${c.approval !== 'approved' ? `<button class="btn btn-dark btn-sm" data-action="set-approval" data-id="${c.id}" data-approval="approved">수락</button>` : ''}
+            ${c.approval !== 'rejected' ? `<button class="btn btn-soft btn-sm danger" data-action="set-approval" data-id="${c.id}" data-approval="rejected">${c.approval === 'approved' ? '게시 취소(반려)' : '반려'}</button>` : ''}
+            ${c.approval === 'approved' ? `<button class="btn btn-soft btn-sm" data-action="toggle-campaign" data-id="${c.id}">${c.status === 'open' ? '마감 처리' : '모집 재개'}</button>` : ''}
             <a class="btn btn-soft btn-sm" href="#/post/${c.id}/edit">수정</a>
             <button class="btn btn-soft btn-sm danger" data-action="delete-campaign" data-id="${c.id}">삭제</button>
           </td>
@@ -828,6 +837,15 @@
       toast('모집글을 삭제했습니다.');
       if (/^#\/post\//.test(location.hash)) go(me().role === 'admin' ? '/admin' : '/my'); else refresh();
     },
+    'set-approval': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      const c = Store.campaign(el.dataset.id);
+      const accept = el.dataset.approval === 'approved';
+      if (!c || !confirm(accept ? `[${c.storeName}] 모집글을 수락해 사이트에 게시할까요?` : `[${c.storeName}] 모집글을 반려할까요?\n사이트에 보이지 않게 됩니다.`)) return;
+      await Store.setApproval(c.id, accept ? 'approved' : 'rejected');
+      toast(accept ? '수락했습니다. 사이트에 게시되었습니다.' : '반려했습니다.');
+      refresh();
+    },
     'toggle-campaign': async el => {
       if (!isAdmin()) return;
       const c = Store.campaign(el.dataset.id);
@@ -993,8 +1011,8 @@
       };
       const saved = await Store.saveCampaign(data, id || undefined);
       state.pendingImage = null;
-      toast(old ? '모집글을 수정했습니다.' : '모집글을 등록했습니다.');
-      go('/campaign/' + saved.id);
+      toast(!old ? '등록 신청했습니다. 관리자 승인 후 게시됩니다.' : saved.approval === 'pending' && old.approval === 'rejected' ? '수정하고 다시 신청했습니다.' : '모집글을 수정했습니다.');
+      go(saved.approval === 'approved' ? '/campaign/' + saved.id : u.role === 'admin' ? '/admin/campaigns' : '/my');
     }
   };
 

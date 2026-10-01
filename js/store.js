@@ -37,7 +37,7 @@
     id: r.id, ownerId: r.owner_id, storeName: r.store_name, menu: r.menu, amount: r.amount, region: r.region,
     category: r.category, channel: r.channel, capacity: r.capacity, image: r.image, deadline: r.deadline,
     periodStart: r.period_start, periodEnd: r.period_end, visitStart: r.visit_start, visitEnd: r.visit_end,
-    description: r.description, conditions: r.conditions, status: r.status, createdAt: day(r.created_at)
+    description: r.description, conditions: r.conditions, status: r.status, approval: r.approval, createdAt: day(r.created_at)
   });
   const fromCampaign = d => ({
     store_name: d.storeName, menu: d.menu, amount: d.amount, region: d.region, category: d.category,
@@ -139,7 +139,12 @@
     /* ---------- 모집글 ---------- */
     campaigns() { return cache.campaigns.slice().sort((a, b) => a.deadline.localeCompare(b.deadline)); },
     campaign(id) { return cache.campaigns.find(c => c.id === id) || null; },
-    isOpen(c) { return c.status === 'open' && c.deadline >= today(); },
+    isOpen(c) { return c.approval === 'approved' && c.status === 'open' && c.deadline >= today(); },
+    // 관리자가 등록 신청을 수락(approved)하거나 반려(rejected)
+    async setApproval(id, approval) {
+      ok(await sb.from('campaigns').update({ approval }).eq('id', id));
+      return done();
+    },
     pickedCount(campaignId) { return cache.picked[campaignId] || 0; },
     async saveCampaign(data, id) {
       const old = id ? this.campaign(id) : null;
@@ -151,6 +156,7 @@
       }
       let saved;
       if (old) {
+        if (old.approval === 'rejected' && old.ownerId === cache.meId) row.approval = 'pending';
         saved = ok(await sb.from('campaigns').update(row).eq('id', id).select().single());
         if (old.image !== row.image) await removeFile(old.image);
       } else {
