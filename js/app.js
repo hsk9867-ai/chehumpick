@@ -420,11 +420,11 @@
       }).join('')}</tbody></table></div>`;
   }
 
-  // 사장님 이용권 안내: 유선 결제 후 관리자가 기간을 지정해야 모집글을 등록할 수 있음
+  // 사장님 결제 안내: 등록 신청은 누구나 가능하고, 유선 결제 확인 후 관리자가 수락하면 게시됨
   function paidNotice(u) {
     return Store.isPaid(u)
-      ? `<p class="paid-box ok">이용 중 · <b>${esc(u.paidUntil)}</b>까지 모집글을 등록할 수 있습니다.</p>`
-      : `<p class="paid-box">모집글 등록은 <b>유선 결제 확인 후</b> 이용할 수 있습니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}<br>결제 문의: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></p>`;
+      ? `<p class="paid-box ok">결제 확인됨 · 이용 기간 <b>${esc(u.paidUntil)}</b>까지</p>`
+      : `<p class="paid-box">등록 신청한 모집글은 <b>유선 결제 확인 후</b> 관리자가 수락하면 게시됩니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}<br>결제 문의: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></p>`;
   }
 
   function ownerMy(u) {
@@ -447,10 +447,10 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1>${Store.isPaid(u) ? '<a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a>' : ''}</div>
+      <div class="section-head"><h1>사장님 마이페이지</h1><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
-      ${mine.length ? mine.map(item).join('') : `<p class="empty">아직 등록한 모집글이 없습니다.${Store.isPaid(u) ? '<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a>' : ''}</p>`}
+      ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a></p>'}
     </section>`;
   }
 
@@ -459,7 +459,6 @@
     const u = Store.currentUser();
     const c = id ? Store.campaign(id) : null;
     if (id && !c) return notFound();
-    if (!id && !Store.isPaid(u)) return `<section class="container section narrow"><h1>모집글 등록</h1>${paidNotice(u)}<a class="back" href="#/my">← 마이페이지로</a></section>`;
     if (c && u.role !== 'admin' && c.ownerId !== u.id) return denied();
     state.pendingImage = null;
     const v = k => esc(c ? c[k] : '');
@@ -537,7 +536,7 @@
         <thead><tr><th>매장명</th><th>사장님</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
         <tbody>${Store.campaigns().sort((a, b) => (b.approval === 'pending') - (a.approval === 'pending')).map(c => `<tr>
           <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
-          <td>${esc((Store.user(c.ownerId) || {}).name || '-')}</td>
+          <td>${esc((Store.user(c.ownerId) || {}).name || '-')} <span class="badge ${Store.isPaid(Store.user(c.ownerId)) ? 'badge-ok' : 'badge-no'}">${Store.isPaid(Store.user(c.ownerId)) ? '결제받음' : '결제받지않음'}</span></td>
           <td>${openBadge(c)}</td><td>${esc(c.deadline)}</td>
           <td>${Store.applicationsByCampaign(c.id).length}명</td><td>${Store.pickedCount(c.id)}/${c.capacity}명</td>
           <td class="nowrap">
@@ -987,7 +986,6 @@
       const id = f.dataset.id;
       const old = id ? Store.campaign(id) : null;
       if (!u || (old ? !canManage(id) : u.role !== 'owner')) throw new Error('권한이 없습니다.');
-      if (!old && !Store.isPaid(u)) throw new Error('모집글 등록은 유선 결제 확인 후 이용할 수 있습니다.');
       const need = (cond, msg) => { if (!cond) throw new Error(msg); };
       const t = k => f[k].value.trim();
       need(t('storeName'), '매장명을 입력해 주세요.');
