@@ -506,6 +506,7 @@
           <label>방문 가능 기간 시작 <i>*</i><input type="date" name="visitStart" value="${v('visitStart')}"></label>
           <label>방문 가능 기간 종료 <i>*</i><input type="date" name="visitEnd" value="${v('visitEnd')}"></label>
         </div>
+        <label>사장님 휴대폰 번호 <i>*</i><input type="tel" name="ownerPhone" value="${esc(c ? Store.ownerPhone(c.id) : (u.role === 'owner' ? u.phone || '' : ''))}" placeholder="입금 확인·승인 안내를 받을 번호 (관리자에게만 공개)"></label>
         <label>예약 연락처 <i>*</i><input type="tel" name="reservePhone" value="${esc(c ? Store.reservePhone(c.id) : '')}" placeholder="예약 문의를 받을 매장 전화번호 (선정된 리뷰어에게만 공개)"></label>
         <label>체험 내용 <i>*</i><textarea name="description" rows="4" placeholder="제공 내역, 방문 시 안내 사항 등을 적어 주세요">${v('description')}</textarea></label>
         <label>리뷰 조건 <i>*</i><textarea name="conditions" rows="4" placeholder="예: 매장 방문 후 릴스 1건 업로드">${v('conditions')}</textarea></label>
@@ -549,10 +550,11 @@
         </tr>`).join('')}</tbody></table></div>`;
     } else if (state.adminTab === 'campaigns') {
       body = `<div class="table-wrap"><table>
-        <thead><tr><th>매장명</th><th>사장님</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
+        <thead><tr><th>매장명</th><th>사장님</th><th>휴대폰</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
         <tbody>${Store.campaigns().sort((a, b) => (b.approval === 'pending') - (a.approval === 'pending')).map(c => `<tr>
           <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
           <td>${esc((Store.user(c.ownerId) || {}).name || '-')} <span class="badge ${Store.isPaid(Store.user(c.ownerId)) ? 'badge-ok' : 'badge-no'}">${Store.isPaid(Store.user(c.ownerId)) ? '결제받음' : '결제받지않음'}</span></td>
+          <td>${Store.ownerPhone(c.id) ? `<a href="tel:${esc(Store.ownerPhone(c.id))}">${esc(Store.ownerPhone(c.id))}</a>` : '<span class="muted">-</span>'}</td>
           <td>${openBadge(c)}</td><td>${esc(c.deadline)}</td>
           <td>${Store.applicationsByCampaign(c.id).length}명</td><td>${Store.pickedCount(c.id)}/${c.capacity}명</td>
           <td class="nowrap">
@@ -1094,6 +1096,7 @@
       need(t('deadline'), '모집 마감일을 선택해 주세요.');
       need(t('periodStart') && t('periodEnd') && t('periodStart') <= t('periodEnd'), '체험 기간을 올바르게 선택해 주세요.');
       need(t('visitStart') && t('visitEnd') && t('visitStart') <= t('visitEnd'), '방문 가능 기간을 올바르게 선택해 주세요.');
+      need(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(t('ownerPhone')), '사장님 휴대폰 번호를 정확히 입력해 주세요. (예: 010-1234-5678)');
       need(/^[0-9-]{8,13}$/.test(t('reservePhone')), '예약 연락처를 숫자와 하이픈(-)으로 정확히 입력해 주세요.');
       need(t('description'), '체험 내용을 입력해 주세요.');
       need(t('conditions'), '리뷰 조건을 입력해 주세요.');
@@ -1103,7 +1106,7 @@
         storeName: t('storeName'), menu: t('menu'), amount: Number(f.amount.value), capacity: Number(f.capacity.value),
         region: f.regionSido.value + ' ' + t('regionDetail'), category: f.category.value, channel: f.channel.value, deadline: t('deadline'),
         periodStart: t('periodStart'), periodEnd: t('periodEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'),
-        description: t('description'), conditions: t('conditions'), image, reservePhone: t('reservePhone')
+        description: t('description'), conditions: t('conditions'), image, reservePhone: t('reservePhone'), ownerPhone: t('ownerPhone')
       };
       const saved = await Store.saveCampaign(data, id || undefined);
       state.pendingImage = null;

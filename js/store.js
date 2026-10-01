@@ -17,7 +17,7 @@
   const today = () => ymd(new Date());
   const day = ts => ymd(new Date(ts));
 
-  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {}, resetRequests: [], reservePhones: {} };
+  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {}, resetRequests: [], reservePhones: {}, ownerPhones: {} };
 
   // 서버 오류 문구를 화면용 문구로 바꿈 (권한 규칙이 보낸 한글 문구는 그대로 사용)
   function fail(error) {
@@ -81,6 +81,9 @@
     // 예약 연락처 (작성한 사장님, 관리자, 선정된 인플루언서에게만 내려옴)
     cache.reservePhones = {};
     if (uid) ok(await sb.from('campaign_contacts').select('*')).forEach(r => { cache.reservePhones[r.campaign_id] = r.phone; });
+    // 사장님 휴대폰 번호 (작성한 사장님과 관리자에게만 내려옴)
+    cache.ownerPhones = {};
+    if (uid) ok(await sb.from('campaign_owner_contacts').select('*')).forEach(r => { cache.ownerPhones[r.campaign_id] = r.phone; });
     cache.meId = uid;
     // 관리자가 삭제한 계정 등 프로필이 없는 로그인은 정리
     if (uid && !cache.users.some(u => u.id === uid)) { await sb.auth.signOut(); cache.meId = null; }
@@ -169,6 +172,7 @@
     },
     pickedCount(campaignId) { return cache.picked[campaignId] || 0; },
     reservePhone(campaignId) { return cache.reservePhones[campaignId] || ''; },
+    ownerPhone(campaignId) { return cache.ownerPhones[campaignId] || ''; },
     async saveCampaign(data, id) {
       const old = id ? this.campaign(id) : null;
       if (id && !old) throw new Error('모집글을 찾을 수 없습니다.');
@@ -187,6 +191,7 @@
         saved = ok(await sb.from('campaigns').insert(row).select().single());
       }
       if (data.reservePhone) ok(await sb.from('campaign_contacts').upsert({ campaign_id: saved.id, phone: data.reservePhone }));
+      if (data.ownerPhone) ok(await sb.from('campaign_owner_contacts').upsert({ campaign_id: saved.id, phone: data.ownerPhone }));
       return done(toCampaign(saved));
     },
     async setCampaignStatus(id, status) {
