@@ -386,7 +386,7 @@
       if (a.status === 'applied') body = '<p class="note">사장님이 신청 내용을 확인하고 있습니다. 선정 결과는 이 화면에 표시됩니다.</p>';
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
-        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
+        <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>${Store.reservePhone(c.id) ? `예약 연락처: <a href="tel:${esc(Store.reservePhone(c.id))}"><b>${esc(Store.reservePhone(c.id))}</b></a> (방문 하루 전까지 예약 필수)<br>` : ''}기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
           <input type="url" name="url" placeholder="리뷰 게시물 주소 (https://...)" value="${esc(a.reviewUrl)}">
           <button class="btn btn-dark">리뷰 링크 제출</button>
@@ -506,6 +506,7 @@
           <label>방문 가능 기간 시작 <i>*</i><input type="date" name="visitStart" value="${v('visitStart')}"></label>
           <label>방문 가능 기간 종료 <i>*</i><input type="date" name="visitEnd" value="${v('visitEnd')}"></label>
         </div>
+        <label>예약 연락처 <i>*</i><input type="tel" name="reservePhone" value="${esc(c ? Store.reservePhone(c.id) : '')}" placeholder="예약 문의를 받을 매장 전화번호 (선정된 리뷰어에게만 공개)"></label>
         <label>체험 내용 <i>*</i><textarea name="description" rows="4" placeholder="제공 내역, 방문 시 안내 사항 등을 적어 주세요">${v('description')}</textarea></label>
         <label>리뷰 조건 <i>*</i><textarea name="conditions" rows="4" placeholder="예: 매장 방문 후 릴스 1건 업로드">${v('conditions')}</textarea></label>
         <label>대표 이미지 (1장) <i>*</i><input type="file" id="post-image" accept="image/*"></label>
@@ -1093,6 +1094,7 @@
       need(t('deadline'), '모집 마감일을 선택해 주세요.');
       need(t('periodStart') && t('periodEnd') && t('periodStart') <= t('periodEnd'), '체험 기간을 올바르게 선택해 주세요.');
       need(t('visitStart') && t('visitEnd') && t('visitStart') <= t('visitEnd'), '방문 가능 기간을 올바르게 선택해 주세요.');
+      need(/^[0-9-]{8,13}$/.test(t('reservePhone')), '예약 연락처를 숫자와 하이픈(-)으로 정확히 입력해 주세요.');
       need(t('description'), '체험 내용을 입력해 주세요.');
       need(t('conditions'), '리뷰 조건을 입력해 주세요.');
       const image = state.pendingImage || (old && old.image);
@@ -1101,7 +1103,7 @@
         storeName: t('storeName'), menu: t('menu'), amount: Number(f.amount.value), capacity: Number(f.capacity.value),
         region: f.regionSido.value + ' ' + t('regionDetail'), category: f.category.value, channel: f.channel.value, deadline: t('deadline'),
         periodStart: t('periodStart'), periodEnd: t('periodEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'),
-        description: t('description'), conditions: t('conditions'), image
+        description: t('description'), conditions: t('conditions'), image, reservePhone: t('reservePhone')
       };
       const saved = await Store.saveCampaign(data, id || undefined);
       state.pendingImage = null;
