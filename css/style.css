@@ -382,3 +382,4 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 .modal-box .modal-actions .btn { margin-top: 0; }
 td.wrap { white-space: normal; min-width: 180px; max-width: 280px; overflow-wrap: anywhere; }
+.cancel-apply { margin-top: 10px; }

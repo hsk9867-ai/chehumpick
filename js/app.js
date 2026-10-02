@@ -426,7 +426,8 @@
       const c = Store.campaign(a.campaignId);
       if (!c) return '';
       let body = '';
-      if (a.status === 'applied') body = '<p class="note">사장님이 신청 내용을 확인하고 있습니다. 선정 결과는 이 화면에 표시됩니다.</p>';
+      if (a.status === 'applied') body = `<p class="note">사장님이 신청 내용을 확인하고 있습니다. 선정 결과는 이 화면에 표시됩니다.</p>
+        <button type="button" class="btn btn-soft btn-sm danger cancel-apply" data-action="cancel-apply" data-id="${a.id}">신청 취소</button>`;
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
         <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>${Store.reservePhone(c.id) ? `예약 연락처: <a href="tel:${esc(Store.reservePhone(c.id))}"><b>${esc(Store.reservePhone(c.id))}</b></a> (방문 하루 전까지 예약 필수)<br>` : ''}기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
@@ -958,6 +959,15 @@
       const c = Store.campaign(el.dataset.id);
       if (!c || !Store.isOpen(c)) return toast('모집이 마감된 체험단입니다.');
       showApplyModal(c);
+    },
+    'cancel-apply': async el => {
+      const a = Store.applications().find(x => x.id === el.dataset.id);
+      if (!a || !me() || a.userId !== me().id) return toast('권한이 없습니다.');
+      const c = Store.campaign(a.campaignId) || {};
+      if (!confirm(`[${c.storeName || ''}] 체험단 신청을 취소할까요?
+모집 기간 안에는 다시 신청할 수 있습니다.`)) return;
+      try { await Store.cancelApplication(a.id); toast('신청을 취소했습니다.'); }
+      finally { refresh(); }
     },
     'owner-status': el => {
       const u = me();

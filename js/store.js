@@ -223,6 +223,12 @@
       ok(await sb.from('applications').insert({ campaign_id: campaignId, user_id: cache.meId, message: message || '' }));
       return done();
     },
+    // 신청 취소: 선정 전(신청 상태)인 내 신청만 지울 수 있음
+    async cancelApplication(id) {
+      const removed = ok(await sb.from('applications').delete().eq('id', id).eq('status', 'applied').select('id'));
+      await refresh();
+      if (!removed.length) throw new Error('이미 선정 결과가 나와 취소할 수 없습니다. 고객센터로 문의해 주세요.');
+    },
     async setApplicationStatus(id, status) {
       ok(await sb.from('applications').update({ status }).eq('id', id));
       return done();
