@@ -98,7 +98,7 @@ window.CHEHUMPICK_DEFAULTS = {
   ].join('\n'),
   bankInfo: '입금 계좌: (관리자 페이지 > 사이트 설정 > 입금 안내에서 계좌를 입력해 주세요)',
   bankNotice: '입금이 확인되면 공고 등록을 승인해 드립니다.',
-  contactEmail: 'help@chehumpick.kr',
+  contactEmail: 'cheheompick@naver.com',
   categories: '맛집, 카페, 디저트, 주점',
   footerTagline: '좋은 경험이\n특별한 콘텐츠가 되는 곳',
   copyright: '© 2026 체험픽. All rights reserved.',
@@ -134,6 +134,6 @@ window.CHEHUMPICK_DEFAULTS = {
     '# 5. 이용자의 권리',
     '회원은 언제든지 본인의 개인정보 열람·정정·삭제를 요청할 수 있습니다.',
     '# 6. 개인정보 보호책임자',
-    '문의: help@chehumpick.kr'
+    '문의: cheheompick@naver.com'
   ].join('\n')
 };

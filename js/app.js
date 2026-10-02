@@ -325,7 +325,6 @@
         <div><dt>제공 금액</dt><dd>${won(c.amount)}</dd></div>
         <div><dt>모집 인원</dt><dd>총 ${c.capacity}명 (${esc(c.channel)}) · 현재 ${Store.pickedCount(c.id)}명 선정</dd></div>
         <div><dt>모집 마감</dt><dd>${esc(c.deadline)}</dd></div>
-        <div><dt>체험 기간</dt><dd>${esc(c.periodStart)} ~ ${esc(c.periodEnd)}</dd></div>
         <div><dt>방문 가능 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div>
       </dl>
       <div class="block"><h2>체험 내용</h2><p>${nl2br(c.description)}</p></div>
@@ -536,10 +535,6 @@
         <div class="cols">
           <label>체험단 유형<select name="channel">${opts(CHANNELS, c && c.channel)}</select></label>
           <label>모집 마감일 <i>*</i><input type="date" name="deadline" value="${v('deadline')}"></label>
-        </div>
-        <div class="cols">
-          <label>체험 기간 시작 <i>*</i><input type="date" name="periodStart" value="${v('periodStart')}"></label>
-          <label>체험 기간 종료 <i>*</i><input type="date" name="periodEnd" value="${v('periodEnd')}"></label>
         </div>
         <div class="cols">
           <label>방문 가능 기간 시작 <i>*</i><input type="date" name="visitStart" value="${v('visitStart')}"></label>
@@ -1150,7 +1145,6 @@
       need(REGIONS.includes(f.regionSido.value), '지역(시·도)을 선택해 주세요.');
       need(t('regionDetail'), '시·군·구를 입력해 주세요.');
       need(t('deadline'), '모집 마감일을 선택해 주세요.');
-      need(t('periodStart') && t('periodEnd') && t('periodStart') <= t('periodEnd'), '체험 기간을 올바르게 선택해 주세요.');
       need(t('visitStart') && t('visitEnd') && t('visitStart') <= t('visitEnd'), '방문 가능 기간을 올바르게 선택해 주세요.');
       need(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(t('ownerPhone')), '사장님 휴대폰 번호를 정확히 입력해 주세요. (예: 010-1234-5678)');
       need(/^[0-9-]{8,13}$/.test(t('reservePhone')), '예약 연락처를 숫자와 하이픈(-)으로 정확히 입력해 주세요.');
@@ -1161,7 +1155,7 @@
       const data = {
         storeName: t('storeName'), menu: t('menu'), amount: Number(f.amount.value), capacity: Number(f.capacity.value),
         region: f.regionSido.value + ' ' + t('regionDetail'), category: f.category.value, channel: f.channel.value, deadline: t('deadline'),
-        periodStart: t('periodStart'), periodEnd: t('periodEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'),
+        periodStart: t('visitStart'), periodEnd: t('visitEnd'), visitStart: t('visitStart'), visitEnd: t('visitEnd'), // 체험 기간은 따로 받지 않고 방문 가능 기간과 같게 저장
         description: t('description'), conditions: t('conditions'), image, reservePhone: t('reservePhone'), ownerPhone: t('ownerPhone')
       };
       const saved = await Store.saveCampaign(data, id || undefined);
