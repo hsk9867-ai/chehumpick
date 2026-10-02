@@ -434,7 +434,8 @@
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
           <input type="url" name="url" placeholder="리뷰 게시물 주소 (https://...)" value="${esc(a.reviewUrl)}">
           <button class="btn btn-dark">리뷰 링크 제출</button>
-        </form>`;
+        </form>
+        <button type="button" class="btn btn-soft btn-sm danger cancel-apply" data-action="cancel-apply" data-id="${a.id}">선정 취소 (체험 포기)</button>`;
       if (a.status === 'submitted') body = `<p class="note">제출한 링크: <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">${esc(a.reviewUrl)}</a><br>관리자가 리뷰를 확인하고 있습니다.</p>`;
       if (a.status === 'done') body = `<p class="note">체험이 완료되었습니다. 감사합니다! <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">제출한 리뷰 보기</a></p>`;
       return `<article class="my-item">
@@ -964,9 +965,12 @@
       const a = Store.applications().find(x => x.id === el.dataset.id);
       if (!a || !me() || a.userId !== me().id) return toast('권한이 없습니다.');
       const c = Store.campaign(a.campaignId) || {};
-      if (!confirm(`[${c.storeName || ''}] 체험단 신청을 취소할까요?
+      if (!confirm(a.status === 'selected'
+        ? `[${c.storeName || ''}] 선정된 체험을 취소할까요?
+선정이 취소되며 되돌릴 수 없습니다. 이미 방문 예약을 했다면 매장에도 꼭 알려 주세요.`
+        : `[${c.storeName || ''}] 체험단 신청을 취소할까요?
 모집 기간 안에는 다시 신청할 수 있습니다.`)) return;
-      try { await Store.cancelApplication(a.id); toast('신청을 취소했습니다.'); }
+      try { await Store.cancelApplication(a.id); toast(a.status === 'selected' ? '선정된 체험을 취소했습니다.' : '신청을 취소했습니다.'); }
       finally { refresh(); }
     },
     'owner-status': el => {
