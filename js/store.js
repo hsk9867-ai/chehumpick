@@ -37,7 +37,7 @@
     id: r.id, ownerId: r.owner_id, storeName: r.store_name, menu: r.menu, amount: r.amount, region: r.region,
     category: r.category, channel: r.channel, capacity: r.capacity, image: r.image, deadline: r.deadline,
     periodStart: r.period_start, periodEnd: r.period_end, visitStart: r.visit_start, visitEnd: r.visit_end,
-    description: r.description, conditions: r.conditions, status: r.status, approval: r.approval, createdAt: day(r.created_at)
+    description: r.description, conditions: r.conditions, status: r.status, approval: r.approval, cancelled: r.cancelled || 0, createdAt: day(r.created_at)
   });
   const fromCampaign = d => ({
     store_name: d.storeName, menu: d.menu, amount: d.amount, region: d.region, category: d.category,
@@ -198,6 +198,11 @@
       if (data.reservePhone) ok(await sb.from('campaign_contacts').upsert({ campaign_id: saved.id, phone: data.reservePhone }));
       if (data.ownerPhone) ok(await sb.from('campaign_owner_contacts').upsert({ campaign_id: saved.id, phone: data.ownerPhone }));
       return done(toCampaign(saved));
+    },
+    // 재모집: 새 모집 마감일로 다시 열기 (빈자리가 다 차면 자동으로 다시 마감됨)
+    async reopenCampaign(id, deadline) {
+      ok(await sb.from('campaigns').update({ status: 'open', deadline }).eq('id', id));
+      return done();
     },
     async setCampaignStatus(id, status) {
       ok(await sb.from('campaigns').update({ status }).eq('id', id));

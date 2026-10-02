@@ -385,3 +385,6 @@ td.wrap { white-space: normal; min-width: 180px; max-width: 280px; overflow-wrap
 .cancel-apply { margin-top: 10px; }
 .th-sort { background: none; border: 0; padding: 0; font-weight: 700; color: inherit; }
 .th-sort.on { color: var(--ink); }
+.paid-box.reopen { margin: 0 0 12px; }
+.paid-box.reopen .inline-form { flex-wrap: wrap; }
+.paid-box.reopen input { flex: 0 1 180px; color: var(--ink); }

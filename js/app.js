@@ -488,6 +488,19 @@
       : `<div class="paid-box">등록 신청한 모집글은 <b>입금 확인 후</b> 관리자가 승인하면 게시됩니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}${bankHtml()}</div>`;
   }
 
+  // 선정된 인플루언서가 취소해 빈자리가 생긴 마감 글: 빈자리만큼 다시 모집
+  function reopenBox(c) {
+    const vacancy = c.capacity - Store.pickedCount(c.id);
+    if (!c.cancelled || vacancy < 1 || c.approval !== 'approved' || Store.isOpen(c)) return '';
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    const suggested = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return `<div class="paid-box reopen">선정된 인플루언서 <b>${c.cancelled}명</b>이 취소했습니다. 새 모집 마감일을 정하면 빈자리 <b>${vacancy}명</b>을 다시 모집할 수 있습니다.
+      <form data-form="reopen" data-id="${c.id}" class="inline-form" novalidate>
+        <input type="date" name="deadline" value="${suggested}" min="${Store.today()}" aria-label="새 모집 마감일">
+        <button class="btn btn-dark">빈자리 ${vacancy}명 재모집</button>
+      </form></div>`;
+  }
+
   function ownerMy(u) {
     const mine = Store.campaigns().filter(c => c.ownerId === u.id);
     const item = c => {
@@ -503,6 +516,7 @@
             <button class="btn btn-soft btn-sm danger" data-action="delete-campaign" data-id="${c.id}">삭제</button>
           </div>
         </div>
+        ${reopenBox(c)}
         ${applicantTable(c)}
       </article>`;
     };
@@ -1209,6 +1223,18 @@
       await Store.apply(f.dataset.id, message);
       closeModal();
       toast('신청이 완료되었습니다. 마이페이지에서 진행 상태를 확인하세요.');
+      refresh();
+    },
+    reopen: async f => {
+      const c = Store.campaign(f.dataset.id);
+      if (!c || !canManage(c.id)) throw new Error('권한이 없습니다.');
+      const deadline = f.deadline.value;
+      const vacancy = c.capacity - Store.pickedCount(c.id);
+      if (!deadline || deadline < Store.today()) throw new Error('새 모집 마감일을 오늘 이후 날짜로 선택해 주세요.');
+      if (c.visitEnd < deadline) throw new Error(`방문 가능 기간(~${c.visitEnd})이 새 마감일보다 빠릅니다. 먼저 "수정"에서 방문 가능 기간을 바꿔 주세요.`);
+      if (!confirm(`[${c.storeName}] 빈자리 ${vacancy}명을 ${deadline}까지 다시 모집할까요?`)) return;
+      await Store.reopenCampaign(c.id, deadline);
+      toast('재모집을 시작했습니다.');
       refresh();
     },
     review: async f => {
