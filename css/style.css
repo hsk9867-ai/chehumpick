@@ -383,3 +383,5 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .modal-box .modal-actions .btn { margin-top: 0; }
 td.wrap { white-space: normal; min-width: 180px; max-width: 280px; overflow-wrap: anywhere; }
 .cancel-apply { margin-top: 10px; }
+.th-sort { background: none; border: 0; padding: 0; font-weight: 700; color: inherit; }
+.th-sort.on { color: var(--ink); }
