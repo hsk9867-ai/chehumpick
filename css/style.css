@@ -84,6 +84,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .hero .container { position: relative; padding-top: 84px; padding-bottom: 84px; }
 .hero-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
 .hero h1 { color: #fff; font-size: clamp(32px, 5.2vw, 50px); line-height: 1.22; font-weight: 800; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .hero p { margin: 18px 0 28px; font-size: 16.5px; color: rgba(255, 255, 255, .92); }
 .hero-note { margin: 12px 0 0 !important; transform: rotate(-4deg); text-align: center; white-space: nowrap; font-size: 28px !important; }
 .hero-sm .container { padding-top: 46px; padding-bottom: 46px; }

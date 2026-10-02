@@ -54,7 +54,7 @@
   const STEPS =['applied', 'selected', 'submitted', 'done'];
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
-  const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', afterLogin: null, pendingImage: null };
+  const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', userQ: '', userRole: '전체', afterLogin: null, pendingImage: null };
 
   /* ---------- 공통 도구 ---------- */
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, ch =>
@@ -217,6 +217,9 @@
   }
 
   function home() {
+    // 사장님으로 로그인하면 메인에서 바로 모집글을 등록할 수 있게 버튼을 보여 줌
+    const u = Store.currentUser();
+    const owner = !!u && u.role === 'owner';
     return `
     <section class="hero" style="background-image:url('${media('poster')}')">
       <div class="hero-media" aria-hidden="true">
@@ -227,7 +230,10 @@
         <div>
           <h1>${nl2br(S.heroTitle)}</h1>
           <p>${nl2br(S.heroSub)}</p>
-          <a class="btn btn-yellow btn-lg" href="#/campaigns">${esc(S.heroButton)} ${ICON.arrow}</a>
+          <div class="hero-actions">
+            <a class="btn btn-yellow btn-lg" href="#/campaigns">${esc(S.heroButton)} ${ICON.arrow}</a>
+            ${owner ? '<a class="btn btn-soft btn-lg" href="#/post/new">+ 모집글 등록 신청</a>' : ''}
+          </div>
         </div>
         <p class="hand hero-note">${nl2br(S.heroNote)}</p>
       </div>
@@ -247,7 +253,8 @@
       </div>
       <div class="cta cta-pink">
         <div><h3>${esc(S.ctaOwnerTitle)}</h3><p>${nl2br(S.ctaOwnerText)}</p>
-        <a class="btn btn-pink" href="#/owner">${esc(S.ctaOwnerButton)} ${ICON.arrow}</a></div>
+        ${owner ? `<a class="btn btn-pink" href="#/post/new">모집글 등록 신청하기 ${ICON.arrow}</a>`
+          : `<a class="btn btn-pink" href="#/owner">${esc(S.ctaOwnerButton)} ${ICON.arrow}</a>`}</div>
         <span class="cta-emoji" aria-hidden="true">👩‍🍳</span>
       </div>
     </section>
@@ -564,6 +571,34 @@
       ${u.paidUntil ? `<button class="btn btn-soft btn-sm danger" data-action="unset-paid" data-id="${u.id}">결제받지않음</button>` : ''}`;
   }
 
+  // 관리자 회원 목록: 유형 필터와 검색어(이름·아이디·연락처·매장명·SNS 주소)를 적용한 표의 줄
+  function userRows() {
+    const q = state.userQ.trim().toLowerCase();
+    const digits = q.replace(/[^0-9]/g, '');
+    const text = u => [u.name, u.username, u.phone, u.storeName, u.snsUrl].concat((u.snsLinks || []).map(l => l.url)).join(' ').toLowerCase();
+    const list = Store.users()
+      .filter(u => state.userRole === '전체' || u.role === state.userRole)
+      .filter(u => !q || text(u).includes(q) || (digits.length >= 3 && String(u.phone || '').replace(/[^0-9]/g, '').includes(digits)));
+    return list.map(u => `<tr>
+          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}${Store.hasResetRequest(u.id) ? ' <span class="badge badge-wait">비밀번호 재설정 요청</span>' : ''}</td><td>${esc(u.username)}</td><td>${esc(u.phone)}</td>
+          <td>${u.role === 'influencer' ? snsLinks(u) : esc(u.storeName || '-')}</td>
+          <td>${esc(u.createdAt)}</td>
+          <td class="nowrap">${u.role === 'owner' ? paidCell(u) : '<span class="muted">-</span>'}</td>
+          <td class="nowrap">${u.role === 'admin' ? '' : `<button class="btn btn-soft btn-sm" data-action="reset-password" data-id="${u.id}">임시 비밀번호 발급</button>
+            <button class="btn btn-soft btn-sm danger" data-action="delete-user" data-id="${u.id}">삭제</button>`}</td>
+        </tr>`).join('') || '<tr><td colspan="8" class="muted">조건에 맞는 회원이 없습니다.</td></tr>';
+  }
+  function userFilter() {
+    const all = Store.users();
+    const tabs = [['전체', '전체'], ['influencer', '인플루언서'], ['owner', '사장님'], ['admin', '관리자']];
+    return `<label class="search">
+        <input type="search" id="user-search" placeholder="이름, 아이디, 연락처, 매장명, SNS 주소로 검색" value="${esc(state.userQ)}">
+        <span class="search-btn">${ICON.search}</span>
+      </label>
+      <div class="pills user-filter">${tabs.map(([k, l]) =>
+        `<button type="button" class="pill ${state.userRole === k ? 'on' : ''}" data-action="user-role" data-role="${k}">${l} ${k === '전체' ? all.length : all.filter(u => u.role === k).length}</button>`).join('')}</div>`;
+  }
+
   function admin(tab) {
     if (tab) state.adminTab = tab;
     const pending = Store.campaigns().filter(c => c.approval === 'pending').length;
@@ -572,16 +607,9 @@
     if (state.adminTab === 'site') {
       body = siteSettings();
     } else if (state.adminTab === 'users') {
-      body = `<div class="table-wrap"><table>
+      body = `${userFilter()}<div class="table-wrap"><table>
         <thead><tr><th>유형</th><th>이름</th><th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th><th>가입일</th><th>이용권 (유선 결제)</th><th></th></tr></thead>
-        <tbody>${Store.users().map(u => `<tr>
-          <td>${ROLE_LABEL[u.role]}</td><td>${esc(u.name)}${Store.hasResetRequest(u.id) ? ' <span class="badge badge-wait">비밀번호 재설정 요청</span>' : ''}</td><td>${esc(u.username)}</td><td>${esc(u.phone)}</td>
-          <td>${u.role === 'influencer' ? snsLinks(u) : esc(u.storeName || '-')}</td>
-          <td>${esc(u.createdAt)}</td>
-          <td class="nowrap">${u.role === 'owner' ? paidCell(u) : '<span class="muted">-</span>'}</td>
-          <td class="nowrap">${u.role === 'admin' ? '' : `<button class="btn btn-soft btn-sm" data-action="reset-password" data-id="${u.id}">임시 비밀번호 발급</button>
-            <button class="btn btn-soft btn-sm danger" data-action="delete-user" data-id="${u.id}">삭제</button>`}</td>
-        </tr>`).join('')}</tbody></table></div>`;
+        <tbody id="user-rows">${userRows()}</tbody></table></div>`;
     } else if (state.adminTab === 'campaigns') {
       body = `<div class="table-wrap"><table>
         <thead><tr><th>매장명</th><th>사장님</th><th>휴대폰</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
@@ -977,6 +1005,11 @@
       refresh();
     },
     'admin-tab': el => go('/admin/' + el.dataset.tab),
+    'user-role': el => {
+      state.userRole = el.dataset.role;
+      document.querySelectorAll('.user-filter .pill').forEach(p => p.classList.toggle('on', p.dataset.role === state.userRole));
+      document.getElementById('user-rows').innerHTML = userRows();
+    },
     'set-paid': async el => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const u = Store.user(el.dataset.id);
@@ -1234,6 +1267,10 @@
     run(() => forms[f.dataset.form](f));
   });
   document.addEventListener('input', e => {
+    if (e.target.id === 'user-search') {
+      state.userQ = e.target.value;
+      document.getElementById('user-rows').innerHTML = userRows();
+    }
     if (e.target.id === 'search') {
       state.q = e.target.value;
       document.getElementById('list-results').innerHTML = listResults();
