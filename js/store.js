@@ -142,6 +142,11 @@
     isPaid(u) { return !!(u && u.paidUntil && u.paidUntil >= today()); },
     async setPaid(id, until) { ok(await sb.rpc('admin_set_paid', { target: id, until: until || null })); return done(); },
     async updateSns(links) { ok(await sb.rpc('update_my_sns', { links })); return done(); },
+    // 내 이름·연락처(사장님은 매장명도) 수정
+    async updateProfile(data) {
+      ok(await sb.rpc('update_my_profile', { p_name: data.name, p_phone: data.phone, p_store_name: data.storeName || null }));
+      return done();
+    },
     // 현재 비밀번호를 확인한 뒤 새 비밀번호로 변경
     async changePassword(current, next) {
       const u = this.currentUser();

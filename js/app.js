@@ -138,7 +138,7 @@
     let html = link('/campaigns', '체험단') + link('/owner', '사장님 안내') + link('/faq', '고객센터');
     if (u) {
       html += u.role === 'admin' ? link('/admin', '관리자 페이지') : link('/my', '마이페이지');
-      html += `<a class="nav-user" href="#/account" title="비밀번호 변경">${esc(u.name)}님 · ${ROLE_LABEL[u.role]}</a>`;
+      html += `<a class="nav-user" href="#/account" title="내 정보 · 비밀번호 변경">${esc(u.name)}님 · ${ROLE_LABEL[u.role]}</a>`;
       html += `<button type="button" class="nav-btn" data-action="logout">로그아웃</button>`;
     } else {
       html += link('/login', '로그인') + link('/signup', '회원가입', 'nav-cta');
@@ -449,7 +449,7 @@
     };
     return `
     <section class="container section narrow">
-      <div class="section-head"><h1>마이페이지</h1><span class="head-links"><a class="more" href="#/account">비밀번호 변경</a><a class="more" href="#/campaigns">체험단 더 찾아보기 ${ICON.arrow}</a></span></div>
+      <div class="section-head"><h1>마이페이지</h1><span class="head-links"><a class="more" href="#/account">내 정보 · 비밀번호 변경</a><a class="more" href="#/campaigns">체험단 더 찾아보기 ${ICON.arrow}</a></span></div>
       ${snsCard(u)}
       <p class="sub">${esc(u.name)}님이 신청한 체험단 ${apps.length}건</p>
       ${apps.length ? apps.map(item).join('') : '<p class="empty">아직 신청한 체험단이 없습니다.<br><a href="#/campaigns">모집 중인 체험단 보러 가기</a></p>'}
@@ -506,7 +506,7 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">비밀번호 변경</a><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></span></div>
+      <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">내 정보 · 비밀번호 변경</a><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></span></div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
       ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a></p>'}
@@ -650,7 +650,7 @@
     }
     return `
     <section class="container section">
-      <h1>관리자 페이지</h1>
+      <div class="section-head"><h1>관리자 페이지</h1><a class="more" href="#/account">내 정보 · 비밀번호 변경</a></div>
       <div class="tabs">${tabs.map(([k, l]) =>
         `<button type="button" class="${state.adminTab === k ? 'on' : ''}" data-action="admin-tab" data-tab="${k}">${l}</button>`).join('')}</div>
       ${body}
@@ -802,15 +802,24 @@
     </form>`;
   }
 
-  /* ---------- 계정: 비밀번호 변경 ---------- */
+  /* ---------- 계정: 내 정보 수정 · 비밀번호 변경 ---------- */
   function account() {
     const u = Store.currentUser();
     return `
     <section class="container section form-page">
       <a class="back" href="#/${u.role === 'admin' ? 'admin' : 'my'}">← 돌아가기</a>
-      <h1>비밀번호 변경</h1>
+      <h1>내 정보 수정</h1>
+      <form data-form="profile" class="form" novalidate>
+        <label>아이디<input value="${esc(u.username)}" readonly></label>
+        <label>이름 <i>*</i><input name="name" autocomplete="name" value="${esc(u.name)}"></label>
+        <label>연락처 <i>*</i><input type="tel" name="phone" autocomplete="tel" value="${esc(u.phone || '')}" placeholder="010-0000-0000"></label>
+        ${u.role === 'owner' ? `<label>매장명 <i>*</i><input name="storeName" value="${esc(u.storeName || '')}"></label>` : ''}
+        ${u.role === 'influencer' ? '<p class="note">SNS 채널은 마이페이지의 "내 SNS 채널"에서 수정할 수 있습니다.</p>' : ''}
+        <button class="btn btn-dark btn-block btn-lg">내 정보 저장</button>
+      </form>
+      <h1 class="second-title">비밀번호 변경</h1>
       <form data-form="password" class="form" novalidate>
-        <label>아이디<input value="${esc(u.username)}" autocomplete="username" readonly></label>
+        <input type="text" value="${esc(u.username)}" autocomplete="username" hidden>
         <label>현재 비밀번호<input type="password" name="current" autocomplete="current-password"></label>
         <label>새 비밀번호<input type="password" name="next" autocomplete="new-password" placeholder="8자 이상"></label>
         <label>새 비밀번호 확인<input type="password" name="next2" autocomplete="new-password"></label>
@@ -1121,6 +1130,18 @@
       await Store.updateSns(links);
       state.snsDraft = null;
       toast('SNS 채널을 저장했습니다.');
+      refresh();
+    },
+    profile: async f => {
+      const u = me();
+      if (!u) throw new Error('로그인이 필요합니다.');
+      const name = f.name.value.trim(), phone = f.phone.value.trim();
+      const storeName = u.role === 'owner' ? f.storeName.value.trim() : '';
+      if (!name) throw new Error('이름을 입력해 주세요.');
+      if (!/^[0-9-]{9,13}$/.test(phone)) throw new Error('연락처를 정확히 입력해 주세요.');
+      if (u.role === 'owner' && !storeName) throw new Error('매장명을 입력해 주세요.');
+      await Store.updateProfile({ name, phone, storeName });
+      toast('내 정보를 저장했습니다.');
       refresh();
     },
     password: async f => {
