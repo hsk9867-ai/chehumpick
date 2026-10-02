@@ -388,3 +388,10 @@ td.wrap { white-space: normal; min-width: 180px; max-width: 280px; overflow-wrap
 .paid-box.reopen { margin: 0 0 12px; }
 .paid-box.reopen .inline-form { flex-wrap: wrap; }
 .paid-box.reopen input { flex: 0 1 180px; color: var(--ink); }
+
+/* 카카오톡 상담 버튼 (화면 오른쪽 아래 고정) */
+.kakao-fab { position: fixed; right: 20px; bottom: 24px; z-index: 30; display: inline-flex; align-items: center; gap: 7px; background: #fee500; color: #191600; border-radius: 999px; padding: 12px 18px 12px 14px; font-weight: 700; font-size: 14.5px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); transition: transform .12s; }
+.kakao-fab:hover { transform: translateY(-2px); }
+/* 아래쪽에 신청 버튼이 붙어 있는 화면에서는 그 위로 올림 */
+body:has(.sticky-action:not(:empty)) .kakao-fab { bottom: 96px; }
+@media (max-width: 640px) { .kakao-fab { right: 14px; bottom: 18px; } body:has(.sticky-action:not(:empty)) .kakao-fab { bottom: 92px; } }
