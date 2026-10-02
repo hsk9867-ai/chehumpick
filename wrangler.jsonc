@@ -2,5 +2,11 @@
   // Cloudflare 배포 설정: 이 폴더의 정적 파일을 그대로 서비스
   "name": "chehumpick",
   "compatibility_date": "2026-09-30",
-  "assets": { "directory": "./" }
+  "assets": { "directory": "./" },
+  "workers_dev": true,
+  // 사이트 주소
+  "routes": [
+    { "pattern": "cheheompick.kr", "custom_domain": true },
+    { "pattern": "www.cheheompick.kr", "custom_domain": true }
+  ]
 }
