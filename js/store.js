@@ -46,7 +46,7 @@
     description: d.description, conditions: d.conditions
   });
   const toApplication = r => ({
-    id: r.id, campaignId: r.campaign_id, userId: r.user_id, status: r.status, reviewUrl: r.review_url,
+    id: r.id, campaignId: r.campaign_id, userId: r.user_id, status: r.status, reviewUrl: r.review_url, message: r.message || '',
     createdAt: day(r.created_at), updatedAt: day(r.updated_at)
   });
 
@@ -212,10 +212,10 @@
     findApplication(campaignId, userId) {
       return cache.applications.find(a => a.campaignId === campaignId && a.userId === userId) || null;
     },
-    async apply(campaignId) {
+    async apply(campaignId, message) {
       const c = this.campaign(campaignId);
       if (!c || !this.isOpen(c)) throw new Error('모집이 마감된 체험단입니다.');
-      ok(await sb.from('applications').insert({ campaign_id: campaignId, user_id: cache.meId }));
+      ok(await sb.from('applications').insert({ campaign_id: campaignId, user_id: cache.meId, message: message || '' }));
       return done();
     },
     async setApplicationStatus(id, status) {

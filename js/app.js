@@ -7,6 +7,13 @@
   const REGIONS = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
   const sidoOf = region => String(region || '').split(' ')[0];
   const CHANNELS = ['인스타 릴스', '인스타 피드', '블로그', '블로그 + 인스타', '유튜브', '상관없음'];
+  // 체험단 유형별로 보여 줄 미션: 유형 → [설정 키, 채널 이름] 목록
+  const MISSIONS = { blog: ['missionBlog', '네이버 블로그'], feed: ['missionFeed', '인스타그램 피드'], reels: ['missionReels', '인스타그램 릴스'] };
+  const CHANNEL_MISSIONS = {
+    '인스타 릴스': ['reels'], '인스타 피드': ['feed'], '블로그': ['blog'],
+    '블로그 + 인스타': ['blog', 'feed', 'reels'], '상관없음': ['blog', 'feed', 'reels']
+  };
+  const MAX_MESSAGE = 200;
   const SNS_TYPES = ['인스타그램', '네이버 블로그', '유튜브', '기타'];
   // 관리자가 바꿀 수 있는 영상·사진 자리: [키, 이름, 종류, 기본 파일]
   const MEDIA_SLOTS = [
@@ -75,6 +82,22 @@
     el.querySelector('button').focus();
   }
   function closeModal() { document.querySelectorAll('.modal').forEach(m => m.remove()); }
+  const tipHtml = () => (S.missionTip ? `<p class="mission-tip">${esc(S.missionTip)}</p>` : '');
+  // 신청 창: 신청 한마디를 적고 신청
+  function showApplyModal(c) {
+    closeModal();
+    const el = document.createElement('div');
+    el.className = 'modal';
+    el.innerHTML = `<form data-form="apply" data-id="${c.id}" class="modal-box form" role="dialog" aria-modal="true" novalidate>
+      <div><h2>체험단 신청</h2><p class="menu">${esc(c.storeName)} · ${esc(c.menu)}</p></div>
+      <label>신청 한마디 (선택)<textarea name="message" rows="3" maxlength="${MAX_MESSAGE}" placeholder="예: 평소 가 보고 싶던 곳이에요! 사진과 영상으로 예쁘게 담아 볼게요."></textarea></label>
+      <p class="note">사장님이 선정할 때 SNS 채널과 함께 확인합니다. (${MAX_MESSAGE}자 이내)</p>
+      ${tipHtml()}
+      <div class="modal-actions"><button type="button" class="btn btn-soft btn-lg" data-action="close-modal">취소</button><button class="btn btn-dark btn-lg">신청하기</button></div>
+    </form>`;
+    document.body.appendChild(el);
+    el.querySelector('textarea').focus();
+  }
   const bankHtml = () => `<div class="bank-info">${nl2br(S.bankInfo)}</div><p class="bank-notice">${nl2br(S.bankNotice)}</p>`;
 
   let toastTimer;
@@ -252,6 +275,19 @@
   }
 
   /* ---------- 2. 모집글 상세 ---------- */
+  // 체험단 미션: 채널별 아이콘 요약 + 펼쳐 보는 상세 설명
+  function missionBlock(c) {
+    const list = (CHANNEL_MISSIONS[c.channel] || []).map(k => MISSIONS[k]).filter(([key]) => S[key]);
+    if (!list.length) return '';
+    return `<div class="block mission"><h2>체험단 미션</h2>${tipHtml()}${list.map(([key, name]) => {
+      const items = rows(S[key]);
+      return `<div class="mission-channel"><h3>${name}</h3>
+        <ul class="mission-icons">${items.map(([icon, label]) => `<li><span aria-hidden="true">${esc(icon)}</span>${esc(label)}</li>`).join('')}</ul>
+        <details><summary>자세히 보기</summary>${items.filter(r => r[2]).map(([, label, desc]) => `<p><b>${esc(label)}</b> · ${esc(desc)}</p>`).join('')}</details>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
   function detail(id) {
     const c = Store.campaign(id);
     if (!c) return notFound();
@@ -294,6 +330,7 @@
       </dl>
       <div class="block"><h2>체험 내용</h2><p>${nl2br(c.description)}</p></div>
       <div class="block"><h2>리뷰 조건</h2><p>${nl2br(c.conditions)}</p></div>
+      ${missionBlock(c)}
       ${S.guide ? `<div class="block guide doc"><h2>${esc(S.guideTitle)}</h2>${richText(S.guide)}</div>` : ''}
       <div class="sticky-action">${action}</div>
     </section>`;
@@ -398,6 +435,7 @@
         <div class="my-body">
           <div class="my-top"><h3><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></h3><span class="badge badge-${STATUS[a.status].cls}">${STATUS[a.status].inf}</span></div>
           <p class="menu">${esc(c.menu)} · 신청일 ${esc(a.createdAt)}</p>
+          ${a.message ? `<p class="note">신청 한마디: ${esc(a.message)}</p>` : ''}
           ${a.status === 'rejected' ? '' : stepper(a.status)}
           ${body}
         </div>
@@ -418,13 +456,14 @@
     if (!apps.length) return '<p class="note">아직 신청자가 없습니다.</p>';
     const full = Store.pickedCount(c.id) >= c.capacity;
     return `<div class="table-wrap"><table>
-      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청일</th><th>상태</th><th>연락처</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>연락처</th><th></th></tr></thead>
       <tbody>${apps.map(a => {
         const inf = Store.user(a.userId) || {};
         const picked = ['selected', 'submitted', 'done'].includes(a.status);
         return `<tr>
           <td>${esc(inf.name)}</td>
           <td>${snsLinks(inf)}</td>
+          <td class="wrap">${a.message ? esc(a.message) : '<span class="muted">-</span>'}</td>
           <td>${esc(a.createdAt)}</td>
           <td>${badge(a.status)}</td>
           <td>${picked ? esc(inf.phone) : '<span class="muted">선정 후 공개</span>'}</td>
@@ -570,20 +609,21 @@
       const count = s => apps.filter(a => a.status === s).length;
       body = `<div class="stats">${Object.keys(STATUS).map(s => `<div><b>${count(s)}</b><span>${STATUS[s].label}</span></div>`).join('')}</div>
       <div class="table-wrap"><table>
-        <thead><tr><th>모집글</th><th>인플루언서</th><th>신청일</th><th>상태</th><th>리뷰 링크</th><th></th></tr></thead>
+        <thead><tr><th>모집글</th><th>인플루언서</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>리뷰 링크</th><th></th></tr></thead>
         <tbody>${apps.map(a => {
           const c = Store.campaign(a.campaignId) || {};
           const inf = Store.user(a.userId) || {};
           return `<tr>
             <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
             <td>${esc(inf.name)} · ${snsLinks(inf)}</td>
+            <td class="wrap">${a.message ? esc(a.message) : '<span class="muted">-</span>'}</td>
             <td>${esc(a.createdAt)}</td>
             <td>${badge(a.status)}</td>
             <td>${a.reviewUrl ? `<a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">링크 확인</a>` : '<span class="muted">-</span>'}</td>
             <td class="nowrap">${ADMIN_BUTTONS[a.status].map(([to, label, dark]) =>
               `<button class="btn ${dark ? 'btn-dark' : 'btn-soft'} btn-sm" data-action="set-status" data-id="${a.id}" data-status="${to}" data-label="${label}">${label}</button>`).join(' ')}</td>
           </tr>`;
-        }).join('') || '<tr><td colspan="6" class="muted">신청 내역이 없습니다.</td></tr>'}</tbody></table></div>`;
+        }).join('') || '<tr><td colspan="7" class="muted">신청 내역이 없습니다.</td></tr>'}</tbody></table></div>`;
     }
     return `
     <section class="container section">
@@ -686,6 +726,12 @@
       ['faqIntro', '자주 묻는 질문 안내 문구'],
       ['faq', '자주 묻는 질문 (한 줄에 하나씩: 질문 | 답변)', 9],
       ['contactEmail', '문의 이메일']
+    ]],
+    ['체험단 미션', [
+      ['missionTip', '선정 팁 문구 (모집글 상세 화면과 신청 창에 표시. 비우면 숨깁니다)'],
+      ['missionBlog', '네이버 블로그 미션 (한 줄에 하나씩: 아이콘 | 짧은 이름 | 설명. 비우면 숨깁니다)', 6],
+      ['missionFeed', '인스타그램 피드 미션 (한 줄에 하나씩: 아이콘 | 짧은 이름 | 설명)', 5],
+      ['missionReels', '인스타그램 릴스 미션 (한 줄에 하나씩: 아이콘 | 짧은 이름 | 설명)', 4]
     ]],
     ['입금 안내', [
       ['bankInfo', '입금 계좌 안내 (은행, 계좌번호, 예금주, 금액 등. 모집글 등록 신청 직후 창으로 보여 줍니다)', 4],
@@ -877,9 +923,9 @@
       const u = me();
       if (!u) { state.afterLogin = '/campaign/' + el.dataset.id; toast('로그인 후 신청할 수 있습니다.'); return go('/login'); }
       if (u.role !== 'influencer') return toast('인플루언서 회원만 신청할 수 있습니다.');
-      await Store.apply(el.dataset.id);
-      toast('신청이 완료되었습니다. 마이페이지에서 진행 상태를 확인하세요.');
-      refresh();
+      const c = Store.campaign(el.dataset.id);
+      if (!c || !Store.isOpen(c)) return toast('모집이 마감된 체험단입니다.');
+      showApplyModal(c);
     },
     'owner-status': el => {
       const u = me();
@@ -1070,6 +1116,16 @@
       await Store.requestPasswordReset(f.username.value, f.name.value, f.phone.value);
       f.reset();
       showModal('비밀번호 재설정 요청', '<p>요청이 접수되었습니다. 입력하신 정보가 가입 정보와 일치하면, 가입할 때 등록한 연락처로 본인 확인 후 임시 비밀번호를 안내해 드립니다.</p>');
+    },
+    apply: async f => {
+      const u = me();
+      if (!u || u.role !== 'influencer') throw new Error('인플루언서 회원만 신청할 수 있습니다.');
+      const message = f.message.value.replace(/\s+/g, ' ').trim();
+      if (message.length > MAX_MESSAGE) throw new Error(`신청 한마디는 ${MAX_MESSAGE}자 이내로 적어 주세요.`);
+      await Store.apply(f.dataset.id, message);
+      closeModal();
+      toast('신청이 완료되었습니다. 마이페이지에서 진행 상태를 확인하세요.');
+      refresh();
     },
     review: async f => {
       const url = f.url.value.trim();
