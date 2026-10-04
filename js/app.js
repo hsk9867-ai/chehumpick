@@ -26,6 +26,9 @@
     ['ownerBg', '사장님 안내 상단 사진', 'image', 'assets/img/owner.jpg']
   ];
   const MAX_VIDEO_MB = 50;
+  // 오픈 기념 공지 팝업을 보여 주는 마지막 날 (이 날까지 접속하면 팝업이 뜸)
+  const NOTICE_UNTIL = '2027-01-04';
+  const NOTICE_KEY = 'chehumpick:eventHideUntil';
   const media = key => Store.media.url(key) || MEDIA_SLOTS.find(s => s[0] === key)[3];
   const heroClips = () => MEDIA_SLOTS.filter(s => s[2] === 'video').map(s => media(s[0]));
   const STATUS = {
@@ -974,6 +977,8 @@
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
     'close-modal': closeModal,
+    'event-close': () => hideEventPop(),
+    'event-hide-today': () => { try { localStorage.setItem(NOTICE_KEY, Store.today()); } catch (e) { /* 저장이 막힌 환경 */ } hideEventPop(); },
     logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
     cat: el => {
       state.cat = el.dataset.cat;
@@ -1378,7 +1383,20 @@
   });
   window.addEventListener('hashchange', () => Store.refresh().catch(() => {}).then(() => render()));
 
+  /* ---------- 오픈 기념 공지 팝업 ---------- */
+  const eventPop = document.getElementById('eventPop');
+  function hideEventPop() { eventPop.hidden = true; document.body.classList.remove('event-open'); }
+  function showEventPop() {
+    if (!eventPop || Store.today() > NOTICE_UNTIL) return;
+    let hiddenUntil = '';
+    try { hiddenUntil = localStorage.getItem(NOTICE_KEY) || ''; } catch (e) { /* 저장이 막힌 환경 */ }
+    if (hiddenUntil >= Store.today()) return;
+    eventPop.hidden = false;
+    document.body.classList.add('event-open');
+  }
+  eventPop.addEventListener('click', e => { if (e.target === eventPop) hideEventPop(); });
+
   Store.init()
     .catch(err => toast((err && err.message) || '서버에 연결하지 못했습니다.'))
-    .then(() => render());
+    .then(() => { render(); showEventPop(); });
 })();

@@ -57,6 +57,66 @@
     <span>카톡 상담</span>
   </a>
 
+  <!-- 오픈 기념 공지 팝업: 표시 기간은 js/app.js 의 NOTICE_UNTIL 에서 정합니다 -->
+  <div class="event-pop" id="eventPop" hidden>
+    <div class="event-box" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+      <button type="button" class="event-close" data-action="event-close" aria-label="닫기">✕</button>
+      <div class="event-head">
+        <svg class="event-art" viewBox="0 0 440 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="evGlow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff2e8d" stop-opacity=".55"/><stop offset="1" stop-color="#ff2e8d" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="360" cy="40" r="150" fill="url(#evGlow)"/>
+          <circle cx="40" cy="190" r="110" fill="url(#evGlow)"/>
+          <g fill="#ff2e8d">
+            <path d="M296 54c0-14 11-25 25-25s25 11 25 25c0 18-25 42-25 42s-25-24-25-42zm25 9a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/>
+            <rect x="268" y="40" width="18" height="6" rx="3" transform="rotate(-25 277 43)"/>
+            <rect x="356" y="40" width="18" height="6" rx="3" transform="rotate(25 365 43)"/>
+            <rect x="262" y="62" width="14" height="6" rx="3"/>
+            <rect x="366" y="62" width="14" height="6" rx="3"/>
+          </g>
+          <g fill="#fff" opacity=".9">
+            <circle cx="92" cy="48" r="3"/><circle cx="130" cy="30" r="2"/><circle cx="60" cy="86" r="2"/><circle cx="400" cy="140" r="3"/><circle cx="372" cy="118" r="2"/>
+          </g>
+        </svg>
+        <span class="event-badge">OPEN EVENT</span>
+        <p class="event-kicker">신규 서비스 오픈 기념</p>
+        <h2 id="eventTitle">3개월<br>특별 할인</h2>
+      </div>
+      <div class="event-body">
+        <p class="event-lead">소규모 브랜드와 1인 사업자를 위한 <b>맞춤형 인플루언서 관리 서비스</b>가 새롭게 오픈했습니다.<br>서비스를 부담 없이 시작하실 수 있도록 가입 후 <b>3개월간 특별 할인 혜택</b>을 제공합니다.</p>
+        <h3 class="event-sub">오픈 이벤트 요금</h3>
+        <div class="event-plans">
+          <div class="event-plan">
+            <span class="event-plan-name">스탠더드</span>
+            <span class="event-plan-desc">인플루언서 최대 5명 관리</span>
+            <span class="event-plan-was">정상가 월 49,000원</span>
+            <span class="event-plan-now">월 <b>39,000</b>원</span>
+            <span class="event-plan-note">가입일로부터 3개월 적용</span>
+          </div>
+          <div class="event-plan event-plan-pro">
+            <span class="event-plan-tag">추천</span>
+            <span class="event-plan-name">프로</span>
+            <span class="event-plan-desc">인플루언서 최대 10명 관리</span>
+            <span class="event-plan-was">정상가 월 69,000원</span>
+            <span class="event-plan-now">월 <b>49,000</b>원</span>
+            <span class="event-plan-note">가입일로부터 3개월 적용</span>
+          </div>
+        </div>
+        <h3 class="event-sub">이용 안내</h3>
+        <p class="event-note">오픈 할인은 <b>가입일로부터 3개월간 자동 적용</b>됩니다. 할인 기간 종료 후에는 각 요금제의 정상 요금으로 자동 전환됩니다.</p>
+        <p class="event-slogan">인플루언서 관리, 이제 복잡하게 하지 마세요.<br><b>필요한 기능부터 가볍게 시작해 보세요.</b></p>
+        <a class="btn btn-dark btn-block btn-lg" href="#/owner" data-action="event-close">사장님 안내 보기 →</a>
+      </div>
+      <div class="event-foot">
+        <button type="button" class="link-btn" data-action="event-hide-today">오늘 하루 보지 않기</button>
+        <button type="button" class="link-btn" data-action="event-close">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
