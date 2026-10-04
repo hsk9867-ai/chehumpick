@@ -731,124 +731,124 @@
   }
 
   /* ---------- 광고주 센터 ---------- */
+  const KAKAO_CHAT = 'https://pf.kakao.com/_xdGxexiX/chat';
+  // 선 아이콘 (진행 단계 · 기능 소개용)
+  const ADS_ICON = {
+    post: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="7" width="30" height="34" rx="4"/><path d="M16 17h16M16 25h16M16 33h9"/></svg>',
+    pick: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="19" cy="17" r="7"/><path d="M6 41c1-8 6.5-12 13-12s12 4 13 12M31 20l4 4 8-9"/></svg>',
+    voucher: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a3 3 0 0 1 3-3h28a3 3 0 0 1 3 3v6a4 4 0 0 0 0 8v6a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3v-6a4 4 0 0 0 0-8z"/><path d="M19 24h10M24 19v10"/></svg>',
+    review: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11h30v22H21l-8 7v-7H9z"/><path d="M17 19h14M17 25h9"/></svg>',
+    guide: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10h12a5 5 0 0 1 5 5v24a4 4 0 0 0-4-4H9zM39 10H27a5 5 0 0 0-5 5v24a4 4 0 0 1 4-4h13z"/></svg>',
+    refill: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M38 22a14 14 0 0 0-25-7M10 26a14 14 0 0 0 25 7"/><path d="M13 9v7h7M35 39v-7h-7"/></svg>',
+    shield: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l15 6v11c0 9-6 16-15 19-9-3-15-10-15-19V12z"/><path d="M17 24l5 5 9-10"/></svg>'
+  };
+  const phone = (src, alt, cls = '') => `<div class="ads-phone ${cls}"><img src="${src}" alt="${alt}" loading="lazy"></div>`;
+
   function adsPage() {
-    const step = (n, title, desc) => `<div class="ads-step"><span class="ads-step-no">${n}</span><h4>${title}</h4><p>${desc}</p></div>`;
-    // 요금제 카드: [이름, 설명, 정상가, 이벤트가, 추천 여부, 포함 기능 목록]
+    const step = (icon, label) => `<li><span class="ads-ico">${ADS_ICON[icon]}</span>${label}</li>`;
+    const feature = (icon, title, desc) => `<div class="ads-feat"><span class="ads-ico">${ADS_ICON[icon]}</span><h3>${title}</h3><p>${desc}</p></div>`;
+    // 요금제 카드: [이름, 설명, 정상가, 이벤트가, 추천 여부, 포함 기능]
     const plan = (name, people, was, now, pro, items) => `<div class="ads-plan ${pro ? 'ads-plan-pro' : ''}">
         ${pro ? '<span class="ads-plan-tag">추천</span>' : ''}
         <h3>${name}</h3><p class="ads-plan-people">${people}</p>
         <p class="ads-plan-was">정상가 월 ${was}원</p>
-        <p class="ads-plan-now">오픈 이벤트가 월 <b>${now}</b>원</p>
-        <p class="ads-plan-note">가입일로부터 3개월 적용 · 이후 정상 요금으로 자동 전환</p>
+        <p class="ads-plan-now">월 <b>${now}</b>원</p>
+        <p class="ads-plan-note">오픈 이벤트가 · 가입일로부터 3개월 적용 후 정상 요금으로 자동 전환</p>
         <ul class="ads-plan-list">${items.map(t => `<li>${ICON.check}${t}</li>`).join('')}</ul>
+        <a class="btn ${pro ? 'btn-dark' : 'btn-soft'} btn-block" href="${KAKAO_CHAT}" target="_blank" rel="noopener">카카오톡으로 상담하기</a>
       </div>`;
     const STANDARD_ITEMS = [
       '리뷰어 신청 접수 · SNS 채널 확인 후 직접 선정',
       '블로그 · 인스타 피드 · 릴스 리뷰 미션 가이드 자동 첨부',
       '선정 리뷰어에게 방문 기간 · 예약 연락처 자동 안내',
-      '리뷰 링크 제출 접수와 체험픽 검수',
+      '체험권 사용 완료 확인과 리뷰 링크 제출',
       '노쇼 · 취소 시 빈자리 재모집',
       '카카오톡 1:1 상담'
     ];
     const PRO_ITEMS = [
       '<b>Standard의 모든 기능</b>',
       '여러 매장 · 여러 모집글 동시 진행',
-      '모집 조건 · 미션 설계 상담 (채널별 리뷰 조건 함께 작성)',
+      '모집 조건 · 미션 설계 상담',
       '노쇼 · 미제출 리뷰어 체험픽이 직접 연락 관리',
-      '월 1회 진행 현황 정리 (신청 · 선정 · 리뷰 완료 수) 카카오톡 발송'
+      '월 1회 진행 현황 정리 카카오톡 발송'
     ];
-    const cmp = (label, self, pick) => `<tr><th>${label}</th><td>${self}</td><td class="ads-cmp-pick">${pick}</td></tr>`;
     return `
-    <section class="hero hero-md ads-hero" style="background-image:url('${media('ownerBg')}')">
-      <div class="container hero-inner">
+    <section class="ads-hero">
+      <div class="container">
+        <span class="ads-kicker">광고주 센터</span>
+        <h1>우리 매장 체험단,<br>체험픽으로 간단하게!</h1>
+        <p>리뷰어 모집부터 선정, 방문, 리뷰 확인까지.<br>소규모 매장과 1인 사업자도 부담 없이 시작할 수 있도록 준비해 두었습니다 :)</p>
+        <div class="ads-hero-actions">
+          <a class="btn btn-dark btn-lg" href="${KAKAO_CHAT}" target="_blank" rel="noopener">카카오톡으로 상담하기 ${ICON.arrow}</a>
+          <a class="btn ads-btn-ghost btn-lg" href="#/owner">사장님 안내 보기</a>
+        </div>
+        ${phone('assets/img/ads-screen-1.jpg', '체험픽 모집글 화면', 'ads-phone-hero')}
+      </div>
+    </section>
+
+    <section class="ads-sec">
+      <div class="container">
+        <h2>간편한 진행 프로세스!</h2>
+        <p class="ads-sub">모집글을 올리면 리뷰어가 신청하고, 사장님은 고르기만 하면 됩니다.</p>
+        <ul class="ads-steps">
+          ${step('post', '모집글 등록')}${step('pick', '리뷰어 선정')}${step('voucher', '체험권 사용')}${step('review', '리뷰 확인')}
+        </ul>
+        <div class="ads-phones">
+          ${phone('assets/img/ads-screen-1.jpg', '모집글 상세 화면')}
+          ${phone('assets/img/ads-screen-2.jpg', '사장님 마이페이지 신청자 선정 화면')}
+          ${phone('assets/img/ads-screen-3.jpg', '리뷰어 체험권 화면')}
+        </div>
+      </div>
+    </section>
+
+    <section class="ads-sec ads-sec-soft">
+      <div class="container">
+        <h2>리뷰 품질은 미션으로!</h2>
+        <p class="ads-sub">채널별 리뷰 미션 가이드가 모집글에 자동으로 붙어, 리뷰어에게 매번 설명할 필요가 없습니다.</p>
+        <div class="ads-feats">
+          ${feature('guide', '채널별 미션 가이드', '블로그는 사진 15장 · 1,000자, 인스타 피드는 해시태그, 릴스는 15~30초 세로 영상처럼 채널마다 기준이 정해져 있습니다.')}
+          ${feature('shield', '협찬 표기 · 12개월 유지', '모든 리뷰어가 #협찬 #체험픽 표기와 12개월 게시 유지 규정을 안내받습니다.')}
+          ${feature('refill', '노쇼 · 취소 재모집', '선정된 리뷰어가 취소하면 빈자리만큼 다시 모집하고, 노쇼 이력은 참여 제한에 반영됩니다.')}
+        </div>
+      </div>
+    </section>
+
+    <section class="ads-sec">
+      <div class="container">
+        <h2>오픈 이벤트 요금</h2>
+        <p class="ads-sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
+        <div class="ads-plans">
+          ${plan('Standard', '인플루언서 최대 5명 관리', '49,000', '39,000', false, STANDARD_ITEMS)}
+          ${plan('Pro', '인플루언서 최대 10명 관리', '69,000', '49,000', true, PRO_ITEMS)}
+        </div>
+        <p class="ads-fine">결제는 상담 후 계좌이체로 진행되며, 입금 확인 후 모집글이 게시됩니다.</p>
+      </div>
+    </section>
+
+    <section class="ads-sec ads-sec-soft">
+      <div class="container narrow">
+        <h2>자주 묻는 질문</h2>
+        <div class="faq">
+          <details><summary>리뷰어는 어떻게 선정하나요?</summary><p>모집글에 신청한 리뷰어의 이름과 SNS 채널을 사장님 마이페이지에서 확인하고 직접 선정합니다. 선정한 뒤에는 연락처가 공개됩니다.</p></details>
+          <details><summary>리뷰어가 방문했는지 어떻게 아나요?</summary><p>리뷰어가 매장에서 체험을 받은 뒤 "체험권 사용 완료"를 누르면 사장님 신청자 표에 사용 완료로 표시됩니다.</p></details>
+          <details><summary>리뷰어가 방문하지 않으면 어떻게 되나요?</summary><p>사전 연락 없는 노쇼는 이후 참여가 제한되며, 취소가 생기면 빈자리만큼 다시 모집할 수 있습니다.</p></details>
+          <details><summary>제공 금액을 넘는 비용은 누가 내나요?</summary><p>모집글에 적은 제공 금액까지만 매장에서 제공하고, 넘는 비용은 리뷰어가 직접 결제합니다.</p></details>
+          <details><summary>여러 매장을 운영하면 계정을 따로 만들어야 하나요?</summary><p>아니요. 사장님 계정 하나로 매장별 모집글을 여러 개 등록할 수 있습니다.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="ads-cta">
+      <div class="container ads-cta-inner">
         <div>
-          <span class="ads-kicker">광고주 센터</span>
-          <h1>우리 매장 마케팅,<br>체험단 모집부터 리뷰 확인까지</h1>
-          <p>소규모 매장과 1인 사업자도 부담 없이 시작할 수 있는 체험단 플랫폼입니다.<br>리뷰어 모집, 선정, 방문, 리뷰 제출까지 체험픽 한 곳에서 관리하세요.</p>
-          <div class="hero-actions">
-            <a class="btn btn-yellow btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 상담하기 ${ICON.arrow}</a>
-            <a class="btn btn-soft btn-lg" href="#/owner">사장님 안내 보기</a>
+          <p class="ads-cta-brand">체험픽<span class="logo-spark" aria-hidden="true"></span></p>
+          <h2>체험픽으로<br><em>우리 매장 리뷰</em> 늘려보세요!</h2>
+          <div class="ads-hero-actions">
+            <a class="btn btn-dark btn-lg" href="${KAKAO_CHAT}" target="_blank" rel="noopener">카카오톡 상담 시작하기 ${ICON.arrow}</a>
+            <a class="btn ads-btn-ghost btn-lg" href="#/signup/owner">사장님으로 가입하기</a>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="container section">
-      <h2>체험픽은 이렇게 돕습니다</h2>
-      <div class="features ads-features">
-        <div class="feature"><span>🎯</span><h4>우리 지역 리뷰어 매칭</h4><p>지역과 카테고리에 맞는 리뷰어가 직접 신청하고, 사장님이 SNS 채널을 보고 고릅니다.</p></div>
-        <div class="feature"><span>📋</span><h4>채널별 리뷰 미션 제공</h4><p>블로그·인스타 피드·릴스 미션 가이드를 모집글에 자동으로 붙여 드립니다.</p></div>
-        <div class="feature"><span>🗓️</span><h4>방문·리뷰 진행 관리</h4><p>선정부터 방문 기간 안내, 리뷰 링크 제출과 확인까지 한 화면에서 봅니다.</p></div>
-        <div class="feature"><span>💬</span><h4>1:1 상담 지원</h4><p>모집 조건 설정부터 결제까지 카카오톡과 전화로 함께 도와드립니다.</p></div>
-      </div>
-    </section>
-
-    <section class="container section ads-cmp-section">
-      <h2>직접 모집할 때와 무엇이 다를까요?</h2>
-      <p class="sub">인스타 DM이나 지인으로 리뷰어를 구하던 과정을 체험픽이 대신합니다.</p>
-      <div class="table-wrap ads-cmp"><table>
-        <thead><tr><th></th><th>직접 모집할 때</th><th class="ads-cmp-pick">체험픽</th></tr></thead>
-        <tbody>
-          ${cmp('리뷰어 찾기', '한 명씩 DM을 보내고 답을 기다립니다', '모집글을 올리면 리뷰어가 신청하고, SNS 채널을 보고 고릅니다')}
-          ${cmp('리뷰 품질', '요청 사항을 매번 메시지로 설명합니다', '채널별 미션 가이드(사진 수 · 글자 수 · 해시태그)가 모집글에 자동으로 붙습니다')}
-          ${cmp('방문 · 예약', '날짜와 연락처를 개별로 주고받습니다', '선정과 동시에 방문 가능 기간과 예약 연락처가 리뷰어에게 안내됩니다')}
-          ${cmp('리뷰 확인', '올렸는지 직접 찾아봐야 합니다', '리뷰어가 링크를 제출하고 체험픽이 확인해 완료 처리합니다')}
-          ${cmp('노쇼 · 취소', '대체 리뷰어를 다시 구해야 합니다', '빈자리만큼 다시 모집하고, 노쇼 이력은 참여 제한에 반영됩니다')}
-          ${cmp('협찬 표시', '리뷰어마다 따로 안내해야 합니다', '모든 리뷰어가 #협찬 표기 규정을 안내받습니다 (표시·광고법)')}
-        </tbody>
-      </table></div>
-    </section>
-
-    <section class="ads-band">
-      <div class="container">
-        <h2>진행 절차</h2>
-        <p class="sub">상담 후 보통 2~3주 안에 리뷰까지 마무리됩니다.</p>
-        <div class="ads-steps">
-          ${step(1, '상담 · 가입', '원하는 체험 메뉴, 인원, 채널을 상담하고 사장님 계정을 만듭니다.')}
-          ${step(2, '모집글 게시', '모집글을 등록 신청하면 확인 후 사이트에 게시됩니다.')}
-          ${step(3, '리뷰어 선정', '신청한 리뷰어의 SNS 채널을 보고 사장님이 직접 선정합니다.')}
-          ${step(4, '방문 · 리뷰 확인', '리뷰어가 방문 후 리뷰 링크를 제출하면 체험픽이 확인해 드립니다.')}
-        </div>
-      </div>
-    </section>
-
-    <section class="container section ads-care">
-      <h2>체험픽이 함께 챙깁니다</h2>
-      <div class="features ads-features">
-        <div class="feature"><span>🧾</span><h4>리뷰 검수 · 완료 처리</h4><p>제출된 리뷰가 미션 조건에 맞는지 확인하고, 부족하면 재제출을 요청합니다.</p></div>
-        <div class="feature"><span>🚫</span><h4>노쇼 · 미제출 관리</h4><p>사전 연락 없는 노쇼와 기한 내 미작성은 이후 체험단 참여를 제한합니다.</p></div>
-        <div class="feature"><span>📌</span><h4>12개월 리뷰 유지</h4><p>리뷰어는 게시물을 12개월 이상 유지하도록 안내받으며, 삭제 시 페널티가 있습니다.</p></div>
-        <div class="feature"><span>🔒</span><h4>연락처 보호</h4><p>사장님 번호는 관리자에게만, 예약 연락처는 선정된 리뷰어에게만 공개됩니다.</p></div>
-      </div>
-    </section>
-
-    <section class="container section">
-      <h2>요금 안내</h2>
-      <p class="sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
-      <div class="ads-plans">
-        ${plan('Standard', '인플루언서 최대 5명 관리', '49,000', '39,000', false, STANDARD_ITEMS)}
-        ${plan('Pro', '인플루언서 최대 10명 관리', '69,000', '49,000', true, PRO_ITEMS)}
-      </div>
-      <p class="note">결제는 상담 후 계좌이체로 진행되며, 입금 확인 후 모집글이 게시됩니다. 자세한 조건은 상담에서 안내해 드립니다.</p>
-    </section>
-
-    <section class="container section ads-faq">
-      <h2>자주 묻는 질문</h2>
-      <div class="faq">
-        <details><summary>리뷰어는 어떻게 선정하나요?</summary><p>모집글에 신청한 리뷰어의 이름과 SNS 채널을 사장님 마이페이지에서 확인하고 직접 선정합니다. 선정한 뒤에는 연락처가 공개됩니다.</p></details>
-        <details><summary>리뷰어가 방문하지 않으면 어떻게 되나요?</summary><p>선정된 리뷰어는 방문 가능 기간 안에 예약 후 방문해야 하며, 사전 연락 없는 노쇼는 이후 참여가 제한됩니다. 취소가 생기면 빈자리만큼 다시 모집할 수 있습니다.</p></details>
-        <details><summary>리뷰에 협찬 표시가 들어가나요?</summary><p>네. 모든 리뷰어는 게시물에 협찬 사실을 표시하도록 안내받습니다(표시·광고의 공정화에 관한 법률).</p></details>
-        <details><summary>제공 금액을 넘는 비용은 누가 내나요?</summary><p>모집글에 적은 제공 금액까지만 매장에서 제공하고, 넘는 비용은 리뷰어가 직접 결제합니다.</p></details>
-        <details><summary>여러 매장을 운영하면 계정을 따로 만들어야 하나요?</summary><p>아니요. 사장님 계정 하나로 매장별 모집글을 여러 개 등록할 수 있습니다.</p></details>
-      </div>
-    </section>
-
-    <section class="container section">
-      <div class="ads-kakao">
-        <span class="ads-kakao-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 3.500c-5.250 0-9.500 3.300-9.500 7.400 0 2.600 1.750 4.900 4.400 6.200l-.9 3.300c-.1.350.3.600.6.400l3.900-2.600c.500.050 1 .100 1.500.100 5.250 0 9.500-3.300 9.500-7.400S17.250 3.500 12 3.500z"/></svg></span>
-        <h2>상담은 카카오톡으로 받고 있습니다</h2>
-        <p>체험 메뉴, 희망 인원, 원하는 채널을 알려 주시면 요금과 진행 방법을 바로 안내해 드립니다.</p>
-        <a class="btn btn-dark btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡 상담 시작하기 ${ICON.arrow}</a>
+        ${phone('assets/img/ads-screen-2.jpg', '사장님 마이페이지 화면', 'ads-phone-cta')}
       </div>
     </section>`;
   }
