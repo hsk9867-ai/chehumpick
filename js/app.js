@@ -122,6 +122,7 @@
     const el = document.createElement('div');
     el.className = 'modal';
     el.innerHTML = `<div class="modal-box modal-box-wide" role="dialog" aria-modal="true">
+      <button type="button" class="modal-x" data-action="close-modal" aria-label="닫기">✕</button>
       <h2>요금제 안내</h2>
       <p class="menu">요금제를 이용하면 모집글이 승인 없이 바로 게시됩니다. 지금은 오픈 이벤트로 3개월간 할인 중입니다.</p>
       <div class="plan-pick">
@@ -130,12 +131,7 @@
       </div>
       <h3 class="modal-sub">입금 안내</h3>
       ${bankHtml()}
-      <p class="bank-notice">입금 후 카카오톡으로 알려 주시면 관리자가 요금제를 적용해 드립니다. 요금제 없이 등록 신청하면 입금 확인 후 승인되어 게시됩니다.</p>
-      <div class="modal-actions">
-        <a class="btn btn-soft btn-lg" href="#/post/new" data-action="close-modal">그냥 등록 신청</a>
-        <a class="btn btn-dark btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 결제 문의</a>
-      </div>
-      <button type="button" class="link-btn modal-close-link" data-action="close-modal">닫기</button>
+      <a class="btn btn-dark btn-block btn-lg plan-kakao" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 결제 문의</a>
     </div>`;
     document.body.appendChild(el);
   }

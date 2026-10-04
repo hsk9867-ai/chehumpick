@@ -589,3 +589,7 @@ body.event-open { overflow: hidden; }
 .ads-sub b { color: var(--ink); }
 .ads-tab-help { margin-top: 12px; background: #fff5fa; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #7a2a4e; }
 .ads-tab-help b { color: #d61b6f; }
+.modal-box { position: relative; max-height: calc(100vh - 32px); overflow-y: auto; }
+.modal-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--soft); color: var(--ink); font-size: 15px; }
+.modal-box-wide h2 { padding-right: 40px; }
+.plan-kakao { margin-top: 18px; text-align: center; }
