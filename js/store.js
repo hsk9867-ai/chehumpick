@@ -17,7 +17,7 @@
   const today = () => ymd(new Date());
   const day = ts => ymd(new Date(ts));
 
-  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {}, resetRequests: [], reservePhones: {}, ownerPhones: {} };
+  const cache = { meId: null, users: [], campaigns: [], applications: [], picked: {}, settings: {}, resetRequests: [], reservePhones: {}, ownerPhones: {}, adInquiries: [] };
 
   // 서버 오류 문구를 화면용 문구로 바꿈 (권한 규칙이 보낸 한글 문구는 그대로 사용)
   function fail(error) {
@@ -78,6 +78,10 @@
     cache.applications = ok(applications).map(toApplication);
     // 비밀번호 재설정 요청 (관리자에게만 내려옴)
     cache.resetRequests = uid ? ok(await sb.from('password_requests').select('user_id').eq('done', false)).map(r => r.user_id) : [];
+    // 광고주 상담 문의 (관리자에게만 내려옴)
+    cache.adInquiries = uid ? ok(await sb.from('ad_inquiries').select('*').order('created_at', { ascending: false })).map(r => ({
+      id: r.id, company: r.company, contactName: r.contact_name, phone: r.phone, source: r.source, message: r.message, done: r.done, createdAt: day(r.created_at)
+    })) : [];
     // 예약 연락처 (작성한 사장님, 관리자, 선정된 인플루언서에게만 내려옴)
     cache.reservePhones = {};
     if (uid) ok(await sb.from('campaign_contacts').select('*')).forEach(r => { cache.reservePhones[r.campaign_id] = r.phone; });
@@ -248,6 +252,15 @@
       ok(await sb.from('applications').update({ status: 'submitted', review_url: url }).eq('id', id));
       return done();
     },
+
+    /* ---------- 광고주 상담 문의 ---------- */
+    adInquiries() { return cache.adInquiries.slice(); },
+    // 로그인 없이도 보낼 수 있음
+    async submitAdInquiry(d) {
+      ok(await sb.from('ad_inquiries').insert({ company: d.company, contact_name: d.contactName, phone: d.phone, source: d.source, message: d.message }));
+    },
+    async setAdInquiryDone(id, done) { ok(await sb.from('ad_inquiries').update({ done }).eq('id', id)); return this.refresh(); },
+    async deleteAdInquiry(id) { ok(await sb.from('ad_inquiries').delete().eq('id', id)); return this.refresh(); },
 
     /* ---------- 사이트 설정 ---------- */
     defaultSettings() { return Object.assign({}, DEFAULT_SETTINGS); },

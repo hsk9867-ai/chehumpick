@@ -138,7 +138,7 @@
     const path = location.hash.slice(1) || '/';
     const link = (href, label, extra = '') =>
       `<a href="#${href}" class="${path.startsWith(href) && href !== '/' ? 'active' : ''} ${extra}">${label}</a>`;
-    let html = link('/campaigns', '체험단') + link('/owner', '사장님 안내') + link('/faq', '고객센터');
+    let html = link('/campaigns', '체험단') + link('/owner', '사장님 안내') + link('/ads', '광고주 센터') + link('/faq', '고객센터');
     if (u) {
       html += u.role === 'admin' ? link('/admin', '관리자 페이지') : link('/my', '마이페이지');
       html += `<a class="nav-user" href="#/account" title="내 정보 · 비밀번호 변경">${esc(u.name)}님 · ${ROLE_LABEL[u.role]}</a>`;
@@ -637,10 +637,22 @@
   function admin(tab) {
     if (tab) state.adminTab = tab;
     const pending = Store.campaigns().filter(c => c.approval === 'pending').length;
-    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글' + (pending ? ` (승인 대기 ${pending})` : '')], ['users', '회원'], ['site', '사이트 설정']];
+    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글' + (pending ? ` (승인 대기 ${pending})` : '')], ['users', '회원'], ['ads', '광고 문의' + (Store.adInquiries().filter(i => !i.done).length ? ` (${Store.adInquiries().filter(i => !i.done).length})` : '')], ['site', '사이트 설정']];
     let body = '';
     if (state.adminTab === 'site') {
       body = siteSettings();
+    } else if (state.adminTab === 'ads') {
+      const list = Store.adInquiries();
+      body = `<div class="table-wrap"><table>
+        <thead><tr><th>접수일</th><th>업체명</th><th>담당자</th><th>연락처</th><th>알게 된 경로</th><th>문의 내용</th><th>상태</th><th></th></tr></thead>
+        <tbody>${list.map(i => `<tr class="${i.done ? 'row-done' : ''}">
+          <td>${esc(i.createdAt)}</td><td>${esc(i.company)}</td><td>${esc(i.contactName || '-')}</td>
+          <td><a href="tel:${esc(i.phone)}">${esc(i.phone)}</a></td><td>${esc(i.source || '-')}</td>
+          <td class="wrap">${i.message ? nl2br(i.message) : '<span class="muted">-</span>'}</td>
+          <td>${i.done ? '<span class="badge badge-done">처리 완료</span>' : '<span class="badge badge-wait">새 문의</span>'}</td>
+          <td class="nowrap"><button class="btn btn-soft btn-sm" data-action="ads-done" data-id="${i.id}" data-done="${i.done ? '' : '1'}">${i.done ? '새 문의로' : '처리 완료'}</button>
+            <button class="btn btn-soft btn-sm danger" data-action="ads-delete" data-id="${i.id}">삭제</button></td>
+        </tr>`).join('') || '<tr><td colspan="8" class="muted">아직 접수된 문의가 없습니다.</td></tr>'}</tbody></table></div>`;
     } else if (state.adminTab === 'users') {
       body = `${userFilter()}<div class="table-wrap"><table>
         <thead><tr><th>유형</th>${sortHead('name', '이름')}<th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th>${sortHead('count', '공고 참여 · 등록')}${sortHead('createdAt', '가입일')}<th>이용권 (유선 결제)</th><th></th></tr></thead>
@@ -715,6 +727,100 @@
         <p class="hand promise-note">${nl2br(S.promiseNote)}</p>
       </div>
       <div class="center">${cta}</div>
+    </section>`;
+  }
+
+  /* ---------- 광고주 센터 ---------- */
+  const AD_SOURCES = ['네이버 검색', '인스타그램 · SNS', '카카오톡 채널', '지인 추천', '리뷰어(인플루언서) 소개', '기타'];
+  function adsPage() {
+    const u = Store.currentUser();
+    const step = (n, title, desc) => `<div class="ads-step"><span class="ads-step-no">${n}</span><h4>${title}</h4><p>${desc}</p></div>`;
+    const plan = (name, people, was, now, pro) => `<div class="ads-plan ${pro ? 'ads-plan-pro' : ''}">
+        ${pro ? '<span class="ads-plan-tag">추천</span>' : ''}
+        <h3>${name}</h3><p class="ads-plan-people">${people}</p>
+        <p class="ads-plan-was">정상가 월 ${was}원</p>
+        <p class="ads-plan-now">오픈 이벤트가 월 <b>${now}</b>원</p>
+        <p class="ads-plan-note">가입일로부터 3개월 적용 · 이후 정상 요금으로 자동 전환</p>
+      </div>`;
+    return `
+    <section class="hero hero-md ads-hero" style="background-image:url('${media('ownerBg')}')">
+      <div class="container hero-inner">
+        <div>
+          <span class="ads-kicker">광고주 센터</span>
+          <h1>우리 매장 마케팅,<br>체험단 모집부터 리뷰 확인까지</h1>
+          <p>소규모 매장과 1인 사업자도 부담 없이 시작할 수 있는 체험단 플랫폼입니다.<br>리뷰어 모집, 선정, 방문, 리뷰 제출까지 체험픽 한 곳에서 관리하세요.</p>
+          <div class="hero-actions">
+            <a class="btn btn-yellow btn-lg" href="#ads-form" data-action="ads-scroll">상담 문의하기 ${ICON.arrow}</a>
+            <a class="btn btn-soft btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 문의</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container section">
+      <h2>체험픽은 이렇게 돕습니다</h2>
+      <div class="features ads-features">
+        <div class="feature"><span>🎯</span><h4>우리 지역 리뷰어 매칭</h4><p>지역과 카테고리에 맞는 리뷰어가 직접 신청하고, 사장님이 SNS 채널을 보고 고릅니다.</p></div>
+        <div class="feature"><span>📋</span><h4>채널별 리뷰 미션 제공</h4><p>블로그·인스타 피드·릴스 미션 가이드를 모집글에 자동으로 붙여 드립니다.</p></div>
+        <div class="feature"><span>🗓️</span><h4>방문·리뷰 진행 관리</h4><p>선정부터 방문 기간 안내, 리뷰 링크 제출과 확인까지 한 화면에서 봅니다.</p></div>
+        <div class="feature"><span>💬</span><h4>1:1 상담 지원</h4><p>모집 조건 설정부터 결제까지 카카오톡과 전화로 함께 도와드립니다.</p></div>
+      </div>
+    </section>
+
+    <section class="ads-band">
+      <div class="container">
+        <h2>진행 절차</h2>
+        <p class="sub">상담 후 보통 2~3주 안에 리뷰까지 마무리됩니다.</p>
+        <div class="ads-steps">
+          ${step(1, '상담 · 가입', '원하는 체험 메뉴, 인원, 채널을 상담하고 사장님 계정을 만듭니다.')}
+          ${step(2, '모집글 게시', '모집글을 등록 신청하면 확인 후 사이트에 게시됩니다.')}
+          ${step(3, '리뷰어 선정', '신청한 리뷰어의 SNS 채널을 보고 사장님이 직접 선정합니다.')}
+          ${step(4, '방문 · 리뷰 확인', '리뷰어가 방문 후 리뷰 링크를 제출하면 체험픽이 확인해 드립니다.')}
+        </div>
+      </div>
+    </section>
+
+    <section class="container section">
+      <h2>요금 안내</h2>
+      <p class="sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
+      <div class="ads-plans">
+        ${plan('스탠더드', '인플루언서 최대 5명 관리', '49,000', '39,000', false)}
+        ${plan('프로', '인플루언서 최대 10명 관리', '69,000', '49,000', true)}
+      </div>
+      <p class="note">결제는 상담 후 계좌이체로 진행되며, 입금 확인 후 모집글이 게시됩니다. 자세한 조건은 상담에서 안내해 드립니다.</p>
+    </section>
+
+    <section class="container section ads-faq">
+      <h2>자주 묻는 질문</h2>
+      <div class="faq">
+        <details><summary>리뷰어는 어떻게 선정하나요?</summary><p>모집글에 신청한 리뷰어의 이름과 SNS 채널을 사장님 마이페이지에서 확인하고 직접 선정합니다. 선정한 뒤에는 연락처가 공개됩니다.</p></details>
+        <details><summary>리뷰어가 방문하지 않으면 어떻게 되나요?</summary><p>선정된 리뷰어는 방문 가능 기간 안에 예약 후 방문해야 하며, 사전 연락 없는 노쇼는 이후 참여가 제한됩니다. 취소가 생기면 빈자리만큼 다시 모집할 수 있습니다.</p></details>
+        <details><summary>리뷰에 협찬 표시가 들어가나요?</summary><p>네. 모든 리뷰어는 게시물에 협찬 사실을 표시하도록 안내받습니다(표시·광고의 공정화에 관한 법률).</p></details>
+        <details><summary>제공 금액을 넘는 비용은 누가 내나요?</summary><p>모집글에 적은 제공 금액까지만 매장에서 제공하고, 넘는 비용은 리뷰어가 직접 결제합니다.</p></details>
+        <details><summary>여러 매장을 운영하면 계정을 따로 만들어야 하나요?</summary><p>아니요. 사장님 계정 하나로 매장별 모집글을 여러 개 등록할 수 있습니다.</p></details>
+      </div>
+    </section>
+
+    <section class="container section" id="ads-form">
+      <div class="ads-form-wrap">
+        <div>
+          <h2>상담 문의</h2>
+          <p class="sub">남겨 주시면 확인 후 영업일 기준 1일 안에 연락드립니다.</p>
+          <ul class="ads-contact">
+            <li>카카오톡: <a href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">체험픽 채널</a></li>
+            <li>이메일: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></li>
+          </ul>
+        </div>
+        <form data-form="ads" class="form" novalidate>
+          <label>업체명 <i>*</i><input name="company" placeholder="매장 또는 브랜드 이름" value="${esc(u && u.storeName || '')}"></label>
+          <label>담당자 이름<input name="contactName" autocomplete="name" value="${esc(u ? u.name : '')}"></label>
+          <label>연락처 <i>*</i><input type="tel" name="phone" autocomplete="tel" placeholder="010-0000-0000" value="${esc(u && u.phone || '')}"></label>
+          <label>체험픽을 알게 된 경로<select name="source"><option value="">선택</option>${AD_SOURCES.map(s => `<option>${s}</option>`).join('')}</select></label>
+          <label>문의 내용<textarea name="message" rows="4" maxlength="1000" placeholder="체험 메뉴, 희망 인원, 원하는 채널, 궁금한 점을 적어 주세요"></textarea></label>
+          <label class="check"><input type="checkbox" name="agree"><span>개인정보 수집·이용에 동의합니다. (필수) <button type="button" class="link-btn" data-action="ads-privacy">내용 보기</button></span></label>
+          <button class="btn btn-dark btn-block btn-lg">문의하기</button>
+        </form>
+      </div>
     </section>`;
   }
 
@@ -912,7 +1018,8 @@
     [/^\/my$/, my],
     [/^\/post\/new$/, guard(['owner'], () => postForm())],
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
-    [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
+    [/^\/admin(?:\/(apps|campaigns|users|ads|site))?$/, guard(['admin'], admin)],
+    [/^\/ads$/, adsPage],
     [/^\/owner$/, ownerLanding],
     [/^\/account$/, guard(['influencer', 'owner', 'admin'], account)],
     [/^\/find$/, find],
@@ -977,6 +1084,22 @@
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
     'close-modal': closeModal,
+    'ads-scroll': () => { const f = document.getElementById('ads-form'); if (f) f.scrollIntoView({ behavior: 'smooth' }); },
+    'ads-privacy': () => showModal('개인정보 수집·이용 안내', `<p>상담 문의를 처리하기 위해 아래 정보를 수집합니다.</p>
+      <div class="bank-info">수집 항목: 업체명, 담당자 이름, 연락처, 알게 된 경로, 문의 내용<br>이용 목적: 광고·체험단 상담과 안내<br>보유 기간: 문의 처리 후 1년, 이후 지체 없이 파기</div>
+      <p class="bank-notice">동의를 거부할 수 있으며, 거부하면 문의 접수가 어렵습니다. 자세한 내용은 <a href="#/privacy" target="_blank">개인정보처리방침</a>을 참고해 주세요.</p>`),
+    'ads-done': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      await Store.setAdInquiryDone(el.dataset.id, !!el.dataset.done);
+      refresh();
+    },
+    'ads-delete': async el => {
+      if (!isAdmin()) return toast('권한이 없습니다.');
+      if (!confirm('이 문의를 삭제할까요?')) return;
+      await Store.deleteAdInquiry(el.dataset.id);
+      toast('문의를 삭제했습니다.');
+      refresh();
+    },
     'event-close': () => hideEventPop(),
     'event-hide-today': () => { try { localStorage.setItem(NOTICE_KEY, Store.today()); } catch (e) { /* 저장이 막힌 환경 */ } hideEventPop(); },
     logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
@@ -1241,6 +1364,15 @@
       await Store.reopenCampaign(c.id, deadline);
       toast('재모집을 시작했습니다.');
       refresh();
+    },
+    ads: async f => {
+      const t = k => f[k].value.trim();
+      if (!t('company')) throw new Error('업체명을 입력해 주세요.');
+      if (!/^[0-9-]{9,13}$/.test(t('phone'))) throw new Error('연락처를 정확히 입력해 주세요.');
+      if (!f.agree.checked) throw new Error('개인정보 수집·이용에 동의해 주세요.');
+      await Store.submitAdInquiry({ company: t('company'), contactName: t('contactName'), phone: t('phone'), source: f.source.value, message: t('message') });
+      f.reset();
+      showModal('문의가 접수되었습니다', '<p>확인 후 영업일 기준 1일 안에 입력하신 연락처로 연락드리겠습니다. 급하시면 카카오톡 채널로 문의해 주세요.</p>');
     },
     review: async f => {
       const url = f.url.value.trim();
