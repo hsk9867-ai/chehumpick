@@ -516,8 +516,33 @@
       </form></div>`;
   }
 
+  // 진행 리포트: 신청 → 선정 → 체험권 사용 → 리뷰 제출 → 완료 숫자
+  function progressStats(apps, cls = '') {
+    const n = f => apps.filter(f).length;
+    const tiles = [
+      [n(() => true), '신청'],
+      [n(a => ['selected', 'submitted', 'done'].includes(a.status)), '선정'],
+      [n(a => a.visitedAt), '체험권 사용'],
+      [n(a => ['submitted', 'done'].includes(a.status)), '리뷰 제출'],
+      [n(a => a.status === 'done'), '완료']
+    ];
+    return `<div class="stats ${cls}">${tiles.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>`;
+  }
+  // 리뷰 모아보기: 제출된 리뷰 링크를 리뷰어별로 한곳에
+  function reviewList(apps) {
+    const list = apps.filter(a => a.reviewUrl);
+    if (!list.length) return '';
+    return `<div class="review-list"><h4>리뷰 모아보기 <span class="muted">${list.length}건</span></h4><ul>${list.map(a => {
+      const inf = Store.user(a.userId) || {};
+      return `<li><span class="review-who">${esc(inf.name || '리뷰어')} · ${esc((inf.snsLinks && inf.snsLinks[0] && inf.snsLinks[0].type) || inf.snsType || 'SNS')}</span>
+        <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">${esc(a.reviewUrl)}</a>
+        <span class="badge ${a.status === 'done' ? 'badge-ok' : 'badge-wait'}">${a.status === 'done' ? '확인 완료' : '확인 대기'}</span></li>`;
+    }).join('')}</ul></div>`;
+  }
+
   function ownerMy(u) {
     const mine = Store.campaigns().filter(c => c.ownerId === u.id);
+    const allApps = mine.flatMap(c => Store.applicationsByCampaign(c.id));
     const item = c => {
       const apps = Store.applicationsByCampaign(c.id);
       const waiting = apps.some(a => a.status === 'applied');
@@ -532,7 +557,9 @@
           </div>
         </div>
         ${reopenBox(c)}
+        ${progressStats(apps, 'stats-sm')}
         ${applicantTable(c)}
+        ${reviewList(apps)}
       </article>`;
     };
     return `
@@ -540,6 +567,7 @@
       <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">내 정보 · 비밀번호 변경</a><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></span></div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
+      ${mine.length > 1 ? `<h3 class="report-title">전체 진행 현황</h3>${progressStats(allApps)}` : ''}
       ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a></p>'}
     </section>`;
   }
@@ -801,7 +829,39 @@
       </div>
     </section>
 
-    <section class="ads-sec ads-sec-soft">
+    <section class="ads-sec ads-sec-soft ads-report">
+      <div class="container">
+        <h2>진행 중에 바로바로 확인하는 리포트!</h2>
+        <p class="ads-sub">전화로 물어볼 필요 없이, 사장님 마이페이지에서 지금 어디까지 진행됐는지 바로 봅니다.</p>
+        <div class="ads-tabs">
+          <button type="button" class="on" data-action="ads-tab" data-tab="0">진행 현황</button>
+          <button type="button" data-action="ads-tab" data-tab="1">신청자 · 선정</button>
+          <button type="button" data-action="ads-tab" data-tab="2">리뷰 모아보기</button>
+        </div>
+        <div class="ads-tab-panels">
+          <div class="ads-tab-panel on">
+            <div class="ads-tab-text"><h3>신청부터 완료까지 숫자로 한눈에</h3>
+              <p>모집글마다 <b>신청 · 선정 · 체험권 사용 · 리뷰 제출 · 완료</b> 인원이 실시간으로 집계됩니다. 여러 매장을 운영하면 전체 합계도 함께 보여 드립니다.</p>
+              <ul class="ads-tab-points"><li>${ICON.check}모집 마감일과 선정 인원(예: 2/3명) 표시</li><li>${ICON.check}빈자리가 생기면 재모집 안내가 바로 뜹니다</li><li>${ICON.check}결제 · 이용 기간도 같은 화면에서 확인</li></ul></div>
+            ${phone('assets/img/ads-report-1.jpg', '사장님 진행 현황 화면')}
+          </div>
+          <div class="ads-tab-panel">
+            <div class="ads-tab-text"><h3>신청한 리뷰어를 보고 직접 선정</h3>
+              <p>신청자의 <b>SNS 채널, 신청 한마디, 신청일</b>을 표로 보고 선정·탈락을 누릅니다. 선정하면 연락처가 열리고, 리뷰어가 체험권을 쓰면 <b>사용 완료</b>로 바뀝니다.</p>
+              <ul class="ads-tab-points"><li>${ICON.check}채널 링크를 눌러 계정을 바로 확인</li><li>${ICON.check}정원이 차면 자동으로 모집 마감</li><li>${ICON.check}선정 취소 · 탈락 취소도 한 번에</li></ul></div>
+            ${phone('assets/img/ads-report-2.jpg', '신청자 선정 화면')}
+          </div>
+          <div class="ads-tab-panel">
+            <div class="ads-tab-text"><h3>올라온 리뷰를 한곳에서 확인</h3>
+              <p>리뷰어가 제출한 <b>게시물 링크가 모집글별로 모입니다</b>. 눌러서 확인하고 완료 처리하면 끝. 조건에 안 맞으면 체험픽이 재제출을 요청합니다.</p>
+              <ul class="ads-tab-points"><li>${ICON.check}리뷰어 이름 · 채널 · 링크 · 확인 상태</li><li>${ICON.check}#협찬 표기와 12개월 유지 규정 안내</li><li>${ICON.check}완료 처리 내역은 관리자도 함께 확인</li></ul></div>
+            ${phone('assets/img/ads-report-3.jpg', '리뷰 모아보기 화면')}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ads-sec">
       <div class="container">
         <h2>리뷰 품질은 미션으로!</h2>
         <p class="ads-sub">채널별 리뷰 미션 가이드가 모집글에 자동으로 붙어, 리뷰어에게 매번 설명할 필요가 없습니다.</p>
@@ -813,7 +873,7 @@
       </div>
     </section>
 
-    <section class="ads-sec">
+    <section class="ads-sec ads-sec-soft">
       <div class="container">
         <h2>오픈 이벤트 요금</h2>
         <p class="ads-sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
@@ -825,7 +885,7 @@
       </div>
     </section>
 
-    <section class="ads-sec ads-sec-soft">
+    <section class="ads-sec">
       <div class="container narrow">
         <h2>자주 묻는 질문</h2>
         <div class="faq">
@@ -1113,6 +1173,11 @@
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
     'close-modal': closeModal,
+    'ads-tab': el => {
+      const i = el.dataset.tab;
+      document.querySelectorAll('.ads-tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === i));
+      document.querySelectorAll('.ads-tab-panel').forEach((p, k) => p.classList.toggle('on', String(k) === i));
+    },
     'event-close': () => hideEventPop(),
     'event-hide-today': () => { try { localStorage.setItem(NOTICE_KEY, Store.today()); } catch (e) { /* 저장이 막힌 환경 */ } hideEventPop(); },
     logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },

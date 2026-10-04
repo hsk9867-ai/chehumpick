@@ -513,3 +513,31 @@ body.event-open { overflow: hidden; }
 .pick-card.used { background-image: none; opacity: .85; }
 .pick-card.used .pick-card-state { color: #8ee0b0; }
 .pick-card-use { margin-top: 14px; }
+
+/* 사장님 진행 리포트 */
+.stats-sm { margin: 4px 0 14px; gap: 8px; }
+.stats-sm div { padding: 10px 6px; }
+.stats-sm b { font-size: 20px; }
+.stats-sm span { font-size: 12px; }
+.report-title { font-size: 16px; margin-bottom: 10px; }
+.review-list { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.review-list h4 { font-size: 14.5px; }
+.review-list ul { margin-top: 8px; display: grid; gap: 8px; }
+.review-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; flex-wrap: wrap; }
+.review-list .review-who { flex: none; font-weight: 600; color: var(--ink); }
+.review-list a { color: var(--blue); text-decoration: underline; overflow-wrap: anywhere; min-width: 0; flex: 1; }
+/* 광고주 센터 리포트 탭 */
+.ads-tabs { display: inline-flex; gap: 6px; margin-top: 28px; background: #fff; border-radius: 999px; padding: 5px; border: 1px solid var(--line); }
+.ads-tabs button { border: 0; background: none; border-radius: 999px; padding: 9px 18px; font-weight: 700; color: var(--muted); }
+.ads-tabs button.on { background: var(--ink); color: #fff; }
+.ads-tab-panel { display: none; }
+.ads-tab-panel.on { display: flex; align-items: center; justify-content: center; gap: 48px; margin-top: 36px; text-align: left; }
+.ads-tab-text { max-width: 440px; }
+.ads-tab-text h3 { font-size: 22px; }
+.ads-tab-text p { margin-top: 10px; color: #4a4f58; font-size: 15px; }
+.ads-tab-text b { color: var(--ink); }
+.ads-tab-points { margin-top: 16px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink); }
+.ads-tab-points li { display: flex; gap: 8px; align-items: center; }
+.ads-tab-points svg { color: #ff2e8d; flex: none; }
+.ads-tab-panel .ads-phone { margin: 0; width: 250px; flex: none; }
+@media (max-width: 640px) { .stats-sm { grid-template-columns: repeat(5, 1fr); } .stats-sm b { font-size: 17px; } .stats-sm span { font-size: 11px; } .ads-tabs { display: flex; } .ads-tabs button { flex: 1; padding: 9px 6px; font-size: 13px; } .ads-tab-panel.on { flex-direction: column; gap: 26px; } }
