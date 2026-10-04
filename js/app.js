@@ -721,13 +721,31 @@
   /* ---------- 광고주 센터 ---------- */
   function adsPage() {
     const step = (n, title, desc) => `<div class="ads-step"><span class="ads-step-no">${n}</span><h4>${title}</h4><p>${desc}</p></div>`;
-    const plan = (name, people, was, now, pro) => `<div class="ads-plan ${pro ? 'ads-plan-pro' : ''}">
+    // 요금제 카드: [이름, 설명, 정상가, 이벤트가, 추천 여부, 포함 기능 목록]
+    const plan = (name, people, was, now, pro, items) => `<div class="ads-plan ${pro ? 'ads-plan-pro' : ''}">
         ${pro ? '<span class="ads-plan-tag">추천</span>' : ''}
         <h3>${name}</h3><p class="ads-plan-people">${people}</p>
         <p class="ads-plan-was">정상가 월 ${was}원</p>
         <p class="ads-plan-now">오픈 이벤트가 월 <b>${now}</b>원</p>
         <p class="ads-plan-note">가입일로부터 3개월 적용 · 이후 정상 요금으로 자동 전환</p>
+        <ul class="ads-plan-list">${items.map(t => `<li>${ICON.check}${t}</li>`).join('')}</ul>
       </div>`;
+    const STANDARD_ITEMS = [
+      '리뷰어 신청 접수 · SNS 채널 확인 후 직접 선정',
+      '블로그 · 인스타 피드 · 릴스 리뷰 미션 가이드 자동 첨부',
+      '선정 리뷰어에게 방문 기간 · 예약 연락처 자동 안내',
+      '리뷰 링크 제출 접수와 체험픽 검수',
+      '노쇼 · 취소 시 빈자리 재모집',
+      '카카오톡 1:1 상담'
+    ];
+    const PRO_ITEMS = [
+      '<b>Standard의 모든 기능</b>',
+      '여러 매장 · 여러 모집글 동시 진행',
+      '모집 조건 · 미션 설계 상담 (채널별 리뷰 조건 함께 작성)',
+      '노쇼 · 미제출 리뷰어 체험픽이 직접 연락 관리',
+      '월 1회 진행 현황 정리 (신청 · 선정 · 리뷰 완료 수) 카카오톡 발송'
+    ];
+    const cmp = (label, self, pick) => `<tr><th>${label}</th><td>${self}</td><td class="ads-cmp-pick">${pick}</td></tr>`;
     return `
     <section class="hero hero-md ads-hero" style="background-image:url('${media('ownerBg')}')">
       <div class="container hero-inner">
@@ -753,6 +771,22 @@
       </div>
     </section>
 
+    <section class="container section ads-cmp-section">
+      <h2>직접 모집할 때와 무엇이 다를까요?</h2>
+      <p class="sub">인스타 DM이나 지인으로 리뷰어를 구하던 과정을 체험픽이 대신합니다.</p>
+      <div class="table-wrap ads-cmp"><table>
+        <thead><tr><th></th><th>직접 모집할 때</th><th class="ads-cmp-pick">체험픽</th></tr></thead>
+        <tbody>
+          ${cmp('리뷰어 찾기', '한 명씩 DM을 보내고 답을 기다립니다', '모집글을 올리면 리뷰어가 신청하고, SNS 채널을 보고 고릅니다')}
+          ${cmp('리뷰 품질', '요청 사항을 매번 메시지로 설명합니다', '채널별 미션 가이드(사진 수 · 글자 수 · 해시태그)가 모집글에 자동으로 붙습니다')}
+          ${cmp('방문 · 예약', '날짜와 연락처를 개별로 주고받습니다', '선정과 동시에 방문 가능 기간과 예약 연락처가 리뷰어에게 안내됩니다')}
+          ${cmp('리뷰 확인', '올렸는지 직접 찾아봐야 합니다', '리뷰어가 링크를 제출하고 체험픽이 확인해 완료 처리합니다')}
+          ${cmp('노쇼 · 취소', '대체 리뷰어를 다시 구해야 합니다', '빈자리만큼 다시 모집하고, 노쇼 이력은 참여 제한에 반영됩니다')}
+          ${cmp('협찬 표시', '리뷰어마다 따로 안내해야 합니다', '모든 리뷰어가 #협찬 표기 규정을 안내받습니다 (표시·광고법)')}
+        </tbody>
+      </table></div>
+    </section>
+
     <section class="ads-band">
       <div class="container">
         <h2>진행 절차</h2>
@@ -766,12 +800,22 @@
       </div>
     </section>
 
+    <section class="container section ads-care">
+      <h2>체험픽이 함께 챙깁니다</h2>
+      <div class="features ads-features">
+        <div class="feature"><span>🧾</span><h4>리뷰 검수 · 완료 처리</h4><p>제출된 리뷰가 미션 조건에 맞는지 확인하고, 부족하면 재제출을 요청합니다.</p></div>
+        <div class="feature"><span>🚫</span><h4>노쇼 · 미제출 관리</h4><p>사전 연락 없는 노쇼와 기한 내 미작성은 이후 체험단 참여를 제한합니다.</p></div>
+        <div class="feature"><span>📌</span><h4>12개월 리뷰 유지</h4><p>리뷰어는 게시물을 12개월 이상 유지하도록 안내받으며, 삭제 시 페널티가 있습니다.</p></div>
+        <div class="feature"><span>🔒</span><h4>연락처 보호</h4><p>사장님 번호는 관리자에게만, 예약 연락처는 선정된 리뷰어에게만 공개됩니다.</p></div>
+      </div>
+    </section>
+
     <section class="container section">
       <h2>요금 안내</h2>
       <p class="sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
       <div class="ads-plans">
-        ${plan('Standard', '인플루언서 최대 5명 관리', '49,000', '39,000', false)}
-        ${plan('Pro', '인플루언서 최대 10명 관리', '69,000', '49,000', true)}
+        ${plan('Standard', '인플루언서 최대 5명 관리', '49,000', '39,000', false, STANDARD_ITEMS)}
+        ${plan('Pro', '인플루언서 최대 10명 관리', '69,000', '49,000', true, PRO_ITEMS)}
       </div>
       <p class="note">결제는 상담 후 계좌이체로 진행되며, 입금 확인 후 모집글이 게시됩니다. 자세한 조건은 상담에서 안내해 드립니다.</p>
     </section>

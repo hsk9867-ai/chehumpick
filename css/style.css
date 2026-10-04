@@ -458,3 +458,15 @@ body.event-open { overflow: hidden; }
 .ads-kakao p { margin: 8px auto 20px; max-width: 520px; color: #4a4300; }
 @media (max-width: 880px) { .ads-steps, .features.ads-features { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .ads-plans, .ads-steps, .features.ads-features { grid-template-columns: 1fr; } .ads-band { padding: 32px 0; } .ads-hero .container { padding-top: 56px; padding-bottom: 56px; } }
+.ads-plan-list { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 9px; font-size: 14px; color: #4a4f58; }
+.ads-plan-list li { display: flex; gap: 8px; align-items: flex-start; }
+.ads-plan-list svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--green); }
+.ads-plan-list b { color: var(--ink); }
+.ads-cmp-section { padding-top: 0; }
+.ads-cmp table { white-space: normal; }
+.ads-cmp th:first-child { width: 110px; color: var(--ink); }
+.ads-cmp td { color: var(--muted); font-size: 14px; vertical-align: top; }
+.ads-cmp td.ads-cmp-pick { color: var(--ink); background: #fff5fa; font-weight: 600; }
+.ads-cmp th.ads-cmp-pick { color: #ff2e8d; }
+.ads-care { padding-top: 0; }
+@media (max-width: 640px) { .ads-cmp th:first-child { width: 72px; } .ads-cmp td { font-size: 13px; } }
