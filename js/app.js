@@ -637,22 +637,10 @@
   function admin(tab) {
     if (tab) state.adminTab = tab;
     const pending = Store.campaigns().filter(c => c.approval === 'pending').length;
-    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글' + (pending ? ` (승인 대기 ${pending})` : '')], ['users', '회원'], ['ads', '광고 문의' + (Store.adInquiries().filter(i => !i.done).length ? ` (${Store.adInquiries().filter(i => !i.done).length})` : '')], ['site', '사이트 설정']];
+    const tabs = [['apps', '신청·선정 현황'], ['campaigns', '모집글' + (pending ? ` (승인 대기 ${pending})` : '')], ['users', '회원'], ['site', '사이트 설정']];
     let body = '';
     if (state.adminTab === 'site') {
       body = siteSettings();
-    } else if (state.adminTab === 'ads') {
-      const list = Store.adInquiries();
-      body = `<div class="table-wrap"><table>
-        <thead><tr><th>접수일</th><th>업체명</th><th>담당자</th><th>연락처</th><th>알게 된 경로</th><th>문의 내용</th><th>상태</th><th></th></tr></thead>
-        <tbody>${list.map(i => `<tr class="${i.done ? 'row-done' : ''}">
-          <td>${esc(i.createdAt)}</td><td>${esc(i.company)}</td><td>${esc(i.contactName || '-')}</td>
-          <td><a href="tel:${esc(i.phone)}">${esc(i.phone)}</a></td><td>${esc(i.source || '-')}</td>
-          <td class="wrap">${i.message ? nl2br(i.message) : '<span class="muted">-</span>'}</td>
-          <td>${i.done ? '<span class="badge badge-done">처리 완료</span>' : '<span class="badge badge-wait">새 문의</span>'}</td>
-          <td class="nowrap"><button class="btn btn-soft btn-sm" data-action="ads-done" data-id="${i.id}" data-done="${i.done ? '' : '1'}">${i.done ? '새 문의로' : '처리 완료'}</button>
-            <button class="btn btn-soft btn-sm danger" data-action="ads-delete" data-id="${i.id}">삭제</button></td>
-        </tr>`).join('') || '<tr><td colspan="8" class="muted">아직 접수된 문의가 없습니다.</td></tr>'}</tbody></table></div>`;
     } else if (state.adminTab === 'users') {
       body = `${userFilter()}<div class="table-wrap"><table>
         <thead><tr><th>유형</th>${sortHead('name', '이름')}<th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th>${sortHead('count', '공고 참여 · 등록')}${sortHead('createdAt', '가입일')}<th>이용권 (유선 결제)</th><th></th></tr></thead>
@@ -731,9 +719,7 @@
   }
 
   /* ---------- 광고주 센터 ---------- */
-  const AD_SOURCES = ['네이버 검색', '인스타그램 · SNS', '카카오톡 채널', '지인 추천', '리뷰어(인플루언서) 소개', '기타'];
   function adsPage() {
-    const u = Store.currentUser();
     const step = (n, title, desc) => `<div class="ads-step"><span class="ads-step-no">${n}</span><h4>${title}</h4><p>${desc}</p></div>`;
     const plan = (name, people, was, now, pro) => `<div class="ads-plan ${pro ? 'ads-plan-pro' : ''}">
         ${pro ? '<span class="ads-plan-tag">추천</span>' : ''}
@@ -750,8 +736,8 @@
           <h1>우리 매장 마케팅,<br>체험단 모집부터 리뷰 확인까지</h1>
           <p>소규모 매장과 1인 사업자도 부담 없이 시작할 수 있는 체험단 플랫폼입니다.<br>리뷰어 모집, 선정, 방문, 리뷰 제출까지 체험픽 한 곳에서 관리하세요.</p>
           <div class="hero-actions">
-            <a class="btn btn-yellow btn-lg" href="#ads-form" data-action="ads-scroll">상담 문의하기 ${ICON.arrow}</a>
-            <a class="btn btn-soft btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 문의</a>
+            <a class="btn btn-yellow btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 상담하기 ${ICON.arrow}</a>
+            <a class="btn btn-soft btn-lg" href="#/owner">사장님 안내 보기</a>
           </div>
         </div>
       </div>
@@ -784,8 +770,8 @@
       <h2>요금 안내</h2>
       <p class="sub">신규 서비스 오픈 기념으로 가입 후 3개월간 특별 할인이 적용됩니다.</p>
       <div class="ads-plans">
-        ${plan('스탠더드', '인플루언서 최대 5명 관리', '49,000', '39,000', false)}
-        ${plan('프로', '인플루언서 최대 10명 관리', '69,000', '49,000', true)}
+        ${plan('Standard', '인플루언서 최대 5명 관리', '49,000', '39,000', false)}
+        ${plan('Pro', '인플루언서 최대 10명 관리', '69,000', '49,000', true)}
       </div>
       <p class="note">결제는 상담 후 계좌이체로 진행되며, 입금 확인 후 모집글이 게시됩니다. 자세한 조건은 상담에서 안내해 드립니다.</p>
     </section>
@@ -801,25 +787,12 @@
       </div>
     </section>
 
-    <section class="container section" id="ads-form">
-      <div class="ads-form-wrap">
-        <div>
-          <h2>상담 문의</h2>
-          <p class="sub">남겨 주시면 확인 후 영업일 기준 1일 안에 연락드립니다.</p>
-          <ul class="ads-contact">
-            <li>카카오톡: <a href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">체험픽 채널</a></li>
-            <li>이메일: <a href="mailto:${esc(S.contactEmail)}">${esc(S.contactEmail)}</a></li>
-          </ul>
-        </div>
-        <form data-form="ads" class="form" novalidate>
-          <label>업체명 <i>*</i><input name="company" placeholder="매장 또는 브랜드 이름" value="${esc(u && u.storeName || '')}"></label>
-          <label>담당자 이름<input name="contactName" autocomplete="name" value="${esc(u ? u.name : '')}"></label>
-          <label>연락처 <i>*</i><input type="tel" name="phone" autocomplete="tel" placeholder="010-0000-0000" value="${esc(u && u.phone || '')}"></label>
-          <label>체험픽을 알게 된 경로<select name="source"><option value="">선택</option>${AD_SOURCES.map(s => `<option>${s}</option>`).join('')}</select></label>
-          <label>문의 내용<textarea name="message" rows="4" maxlength="1000" placeholder="체험 메뉴, 희망 인원, 원하는 채널, 궁금한 점을 적어 주세요"></textarea></label>
-          <label class="check"><input type="checkbox" name="agree"><span>개인정보 수집·이용에 동의합니다. (필수) <button type="button" class="link-btn" data-action="ads-privacy">내용 보기</button></span></label>
-          <button class="btn btn-dark btn-block btn-lg">문의하기</button>
-        </form>
+    <section class="container section">
+      <div class="ads-kakao">
+        <span class="ads-kakao-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 3.500c-5.250 0-9.500 3.300-9.500 7.400 0 2.600 1.750 4.900 4.400 6.200l-.9 3.300c-.1.350.3.600.6.400l3.900-2.600c.500.050 1 .100 1.500.100 5.250 0 9.500-3.300 9.500-7.400S17.250 3.500 12 3.500z"/></svg></span>
+        <h2>상담은 카카오톡으로 받고 있습니다</h2>
+        <p>체험 메뉴, 희망 인원, 원하는 채널을 알려 주시면 요금과 진행 방법을 바로 안내해 드립니다.</p>
+        <a class="btn btn-dark btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡 상담 시작하기 ${ICON.arrow}</a>
       </div>
     </section>`;
   }
@@ -1018,7 +991,7 @@
     [/^\/my$/, my],
     [/^\/post\/new$/, guard(['owner'], () => postForm())],
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
-    [/^\/admin(?:\/(apps|campaigns|users|ads|site))?$/, guard(['admin'], admin)],
+    [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
     [/^\/ads$/, adsPage],
     [/^\/owner$/, ownerLanding],
     [/^\/account$/, guard(['influencer', 'owner', 'admin'], account)],
@@ -1084,22 +1057,6 @@
   const actions = {
     'toggle-nav': () => nav.classList.toggle('open'),
     'close-modal': closeModal,
-    'ads-scroll': () => { const f = document.getElementById('ads-form'); if (f) f.scrollIntoView({ behavior: 'smooth' }); },
-    'ads-privacy': () => showModal('개인정보 수집·이용 안내', `<p>상담 문의를 처리하기 위해 아래 정보를 수집합니다.</p>
-      <div class="bank-info">수집 항목: 업체명, 담당자 이름, 연락처, 알게 된 경로, 문의 내용<br>이용 목적: 광고·체험단 상담과 안내<br>보유 기간: 문의 처리 후 1년, 이후 지체 없이 파기</div>
-      <p class="bank-notice">동의를 거부할 수 있으며, 거부하면 문의 접수가 어렵습니다. 자세한 내용은 <a href="#/privacy" target="_blank">개인정보처리방침</a>을 참고해 주세요.</p>`),
-    'ads-done': async el => {
-      if (!isAdmin()) return toast('권한이 없습니다.');
-      await Store.setAdInquiryDone(el.dataset.id, !!el.dataset.done);
-      refresh();
-    },
-    'ads-delete': async el => {
-      if (!isAdmin()) return toast('권한이 없습니다.');
-      if (!confirm('이 문의를 삭제할까요?')) return;
-      await Store.deleteAdInquiry(el.dataset.id);
-      toast('문의를 삭제했습니다.');
-      refresh();
-    },
     'event-close': () => hideEventPop(),
     'event-hide-today': () => { try { localStorage.setItem(NOTICE_KEY, Store.today()); } catch (e) { /* 저장이 막힌 환경 */ } hideEventPop(); },
     logout: async () => { await Store.logout(); toast('로그아웃되었습니다.'); location.hash === '#/' ? render() : go('/'); },
@@ -1364,15 +1321,6 @@
       await Store.reopenCampaign(c.id, deadline);
       toast('재모집을 시작했습니다.');
       refresh();
-    },
-    ads: async f => {
-      const t = k => f[k].value.trim();
-      if (!t('company')) throw new Error('업체명을 입력해 주세요.');
-      if (!/^[0-9-]{9,13}$/.test(t('phone'))) throw new Error('연락처를 정확히 입력해 주세요.');
-      if (!f.agree.checked) throw new Error('개인정보 수집·이용에 동의해 주세요.');
-      await Store.submitAdInquiry({ company: t('company'), contactName: t('contactName'), phone: t('phone'), source: f.source.value, message: t('message') });
-      f.reset();
-      showModal('문의가 접수되었습니다', '<p>확인 후 영업일 기준 1일 안에 입력하신 연락처로 연락드리겠습니다. 급하시면 카카오톡 채널로 문의해 주세요.</p>');
     },
     review: async f => {
       const url = f.url.value.trim();
