@@ -72,7 +72,7 @@
     ok(contacts).forEach(c => { contactOf[c.user_id] = c; });
     cache.users = ok(profiles).map(p => ({
       id: p.id, role: p.role, name: p.name, username: p.username, snsType: p.sns_type, snsUrl: p.sns_url, storeName: p.store_name,
-      snsLinks: Array.isArray(p.sns_links) ? p.sns_links : [], paidUntil: p.paid_until || null,
+      snsLinks: Array.isArray(p.sns_links) ? p.sns_links : [], paidUntil: p.paid_until || null, plan: p.plan || null,
       email: (contactOf[p.id] || {}).email, phone: (contactOf[p.id] || {}).phone, createdAt: day(p.created_at)
     }));
     cache.applications = ok(applications).map(toApplication);
@@ -140,6 +140,9 @@
     user(id) { return cache.users.find(u => u.id === id) || null; },
     // 사장님 이용권: 관리자가 지정한 날짜까지 모집글 등록 가능
     isPaid(u) { return !!(u && u.paidUntil && u.paidUntil >= today()); },
+    // 요금제(Standard/Pro)가 있고 이용 기간이 남은 사장님: 모집글이 승인 없이 바로 게시됨
+    hasPlan(u) { return !!(u && u.plan && this.isPaid(u)); },
+    async setPlan(id, plan, until) { ok(await sb.rpc('admin_set_plan', { target: id, new_plan: plan || null, until: until || null })); return done(); },
     async setPaid(id, until) { ok(await sb.rpc('admin_set_paid', { target: id, until: until || null })); return done(); },
     async updateSns(links) { ok(await sb.rpc('update_my_sns', { links })); return done(); },
     // 내 이름·연락처(사장님은 매장명도) 수정
@@ -193,6 +196,7 @@
         if (old.image !== row.image) await removeFile(old.image);
       } else {
         row.owner_id = cache.meId;
+        if (this.hasPlan(this.currentUser())) row.approval = 'approved'; // 요금제 사장님은 바로 게시
         saved = ok(await sb.from('campaigns').insert(row).select().single());
       }
       if (data.reservePhone) ok(await sb.from('campaign_contacts').upsert({ campaign_id: saved.id, phone: data.reservePhone }));

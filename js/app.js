@@ -68,6 +68,7 @@
     });
     return out;
   }
+  const PLAN_LABEL = { standard: 'Standard', pro: 'Pro' };
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
   const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', userQ: '', userRole: '전체', userSort: 'createdAt', userSortDesc: false, afterLogin: null, pendingImage: null };
@@ -113,6 +114,29 @@
     </form>`;
     document.body.appendChild(el);
     el.querySelector('textarea').focus();
+  }
+  // 결제하지 않은 사장님이 모집글을 올리기 전에 보는 요금제·입금 안내
+  function showPlanModal() {
+    closeModal();
+    const el = document.createElement('div');
+    el.className = 'modal';
+    el.innerHTML = `<div class="modal-box modal-box-wide" role="dialog" aria-modal="true">
+      <h2>요금제 안내</h2>
+      <p class="menu">요금제를 이용하면 모집글이 승인 없이 바로 게시됩니다. 지금은 오픈 이벤트로 3개월간 할인 중입니다.</p>
+      <div class="plan-pick">
+        <div class="plan-pick-item"><b>Standard</b><span>인플루언서 최대 5명 관리</span><em>월 39,000원</em><small>정상가 49,000원</small></div>
+        <div class="plan-pick-item pro"><b>Pro</b><span>인플루언서 최대 10명 관리</span><em>월 49,000원</em><small>정상가 69,000원</small></div>
+      </div>
+      <h3 class="modal-sub">입금 안내</h3>
+      ${bankHtml()}
+      <p class="bank-notice">입금 후 카카오톡으로 알려 주시면 관리자가 요금제를 적용해 드립니다. 요금제 없이 등록 신청하면 입금 확인 후 승인되어 게시됩니다.</p>
+      <div class="modal-actions">
+        <a class="btn btn-soft btn-lg" href="#/post/new" data-action="close-modal">그냥 등록 신청</a>
+        <a class="btn btn-dark btn-lg" href="https://pf.kakao.com/_xdGxexiX/chat" target="_blank" rel="noopener">카카오톡으로 결제 문의</a>
+      </div>
+      <button type="button" class="link-btn modal-close-link" data-action="close-modal">닫기</button>
+    </div>`;
+    document.body.appendChild(el);
   }
   const bankHtml = () => `<div class="bank-info">${nl2br(S.bankInfo)}</div><p class="bank-notice">${nl2br(S.bankNotice)}</p>`;
 
@@ -248,7 +272,7 @@
           <p>${nl2br(S.heroSub)}</p>
           <div class="hero-actions">
             <a class="btn btn-yellow btn-lg" href="#/campaigns">${esc(S.heroButton)} ${ICON.arrow}</a>
-            ${owner ? '<a class="btn btn-soft btn-lg" href="#/post/new">+ 모집글 등록 신청</a>' : ''}
+            ${owner ? '<a class="btn btn-soft btn-lg" href="#/post/new" data-action="new-post">+ 모집글 등록 신청</a>' : ''}
           </div>
         </div>
         <p class="hand hero-note">${nl2br(S.heroNote)}</p>
@@ -269,7 +293,7 @@
       </div>
       <div class="cta cta-pink">
         <div><h3>${esc(S.ctaOwnerTitle)}</h3><p>${nl2br(S.ctaOwnerText)}</p>
-        ${owner ? `<a class="btn btn-pink" href="#/post/new">모집글 등록 신청하기 ${ICON.arrow}</a>`
+        ${owner ? `<a class="btn btn-pink" href="#/post/new" data-action="new-post">모집글 등록 신청하기 ${ICON.arrow}</a>`
           : `<a class="btn btn-pink" href="#/owner">${esc(S.ctaOwnerButton)} ${ICON.arrow}</a>`}</div>
         <span class="cta-emoji" aria-hidden="true">👩‍🍳</span>
       </div>
@@ -510,6 +534,7 @@
 
   // 사장님 결제 안내: 등록 신청은 누구나 가능하고, 유선 결제 확인 후 관리자가 수락하면 게시됨
   function paidNotice(u) {
+    if (Store.hasPlan(u)) return `<p class="paid-box ok"><b>${PLAN_LABEL[u.plan]}</b> 이용 중 · ${esc(u.paidUntil)}까지 · 모집글이 승인 없이 바로 게시됩니다.</p>`;
     return Store.isPaid(u)
       ? `<p class="paid-box ok">결제 확인됨 · 이용 기간 <b>${esc(u.paidUntil)}</b>까지</p>`
       : `<div class="paid-box">등록 신청한 모집글은 <b>입금 확인 후</b> 관리자가 승인하면 게시됩니다.${u.paidUntil ? ` (이용 기간이 ${esc(u.paidUntil)}에 끝났습니다.)` : ''}${bankHtml()}</div>`;
@@ -576,11 +601,11 @@
     };
     return `
     <section class="container section">
-      <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">내 정보 · 비밀번호 변경</a><a class="btn btn-dark" href="#/post/new">+ 모집글 등록 신청</a></span></div>
+      <div class="section-head"><h1>사장님 마이페이지</h1><span class="head-links"><a class="more" href="#/account">내 정보 · 비밀번호 변경</a><a class="btn btn-dark" href="#/post/new" data-action="new-post">+ 모집글 등록 신청</a></span></div>
       ${paidNotice(u)}
       <p class="sub">${esc(u.storeName || u.name)} · 등록한 모집글 ${mine.length}건</p>
       ${mine.length > 1 ? `<h3 class="report-title">전체 진행 현황</h3>${progressStats(allApps)}` : ''}
-      ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new">첫 체험단 모집글 등록 신청하기</a></p>'}
+      ${mine.length ? mine.map(item).join('') : '<p class="empty">아직 등록한 모집글이 없습니다.<br><a href="#/post/new" data-action="new-post">첫 체험단 모집글 등록 신청하기</a></p>'}
     </section>`;
   }
 
@@ -596,8 +621,8 @@
     return `
     <section class="container section form-page wide">
       <a class="back" href="#/${u.role === 'admin' ? 'admin' : 'my'}">← 돌아가기</a>
-      <h1>${c ? '모집글 수정' : '모집글 등록 신청'}</h1>
-      ${c ? '' : '<p class="sub">등록 신청 후 입금 계좌를 안내해 드리며, 입금이 확인되면 관리자가 승인해 게시됩니다.</p>'}
+      <h1>${c ? '모집글 수정' : Store.hasPlan(u) ? '모집글 등록' : '모집글 등록 신청'}</h1>
+      ${c ? '' : Store.hasPlan(u) ? `<p class="sub"><b>${PLAN_LABEL[u.plan]}</b> 요금제 이용 중이라 등록하면 바로 게시됩니다.</p>` : '<p class="sub">등록 신청 후 입금 계좌를 안내해 드리며, 입금이 확인되면 관리자가 승인해 게시됩니다.</p>'}
       <form data-form="post" data-id="${c ? c.id : ''}" class="form" novalidate>
         <label>매장명 <i>*</i><input name="storeName" value="${c ? v('storeName') : esc(u.storeName || '')}" placeholder="매장명을 입력해 주세요"></label>
         <label>체험 메뉴 <i>*</i><input name="menu" value="${v('menu')}" placeholder="예: 황금치킨 + 수제맥주"></label>
@@ -624,7 +649,7 @@
         <label>리뷰 조건 <i>*</i><textarea name="conditions" rows="4" placeholder="예: 매장 방문 후 릴스 1건 업로드">${v('conditions')}</textarea></label>
         <label>대표 이미지 (1장) <i>*</i><input type="file" id="post-image" accept="image/*"></label>
         <div id="image-preview" class="image-preview">${c ? `<img src="${v('image')}" alt="현재 대표 이미지">` : ''}</div>
-        <button class="btn btn-dark btn-block btn-lg">${c ? (c.approval === 'rejected' && u.role !== 'admin' ? '수정하고 다시 신청하기' : '수정 내용 저장') : '등록 신청하기'}</button>
+        <button class="btn btn-dark btn-block btn-lg">${c ? (c.approval === 'rejected' && u.role !== 'admin' ? '수정하고 다시 신청하기' : '수정 내용 저장') : Store.hasPlan(u) ? '등록하기' : '등록 신청하기'}</button>
         ${c ? `<button type="button" class="btn btn-soft btn-block danger" data-action="delete-campaign" data-id="${c.id}">이 모집글 삭제</button>` : ''}
       </form>
     </section>`;
@@ -632,14 +657,16 @@
 
   /* ---------- 8. 관리자 페이지 ---------- */
   // 결제받음(기간 지정) / 결제받지않음을 계정별로 지정
+  // 요금제(없음 / Standard / Pro)와 이용 종료일을 함께 지정
   function paidCell(u) {
-    const paid = Store.isPaid(u);
+    const active = Store.hasPlan(u);
     const next = new Date(); next.setMonth(next.getMonth() + 1);
     const suggested = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
-    return `<span class="badge ${paid ? 'badge-ok' : 'badge-no'}">${paid ? '결제받음' : u.paidUntil ? '기간 만료' : '결제받지않음'}</span>
-      <input type="date" class="paid-date" data-paid-date="${u.id}" value="${esc(paid ? u.paidUntil : suggested)}" min="${Store.today()}" aria-label="이용 종료일">
-      <button class="btn btn-dark btn-sm" data-action="set-paid" data-id="${u.id}">${paid ? '기간 변경' : '결제받음 처리'}</button>
-      ${u.paidUntil ? `<button class="btn btn-soft btn-sm danger" data-action="unset-paid" data-id="${u.id}">결제받지않음</button>` : ''}`;
+    const label = active ? `${PLAN_LABEL[u.plan]} 이용 중` : u.plan ? `${PLAN_LABEL[u.plan]} 기간 만료` : '요금제 없음';
+    return `<span class="badge ${active ? 'badge-ok' : u.plan ? 'badge-wait' : 'badge-no'}">${label}</span>
+      <select class="paid-plan" data-paid-plan="${u.id}" aria-label="요금제">${[['', '없음'], ['standard', 'Standard'], ['pro', 'Pro']].map(([v, l]) => `<option value="${v}" ${(u.plan || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <input type="date" class="paid-date" data-paid-date="${u.id}" value="${esc(Store.isPaid(u) ? u.paidUntil : suggested)}" min="${Store.today()}" aria-label="이용 종료일">
+      <button class="btn btn-dark btn-sm" data-action="set-plan" data-id="${u.id}">적용</button>`;
   }
 
   // 관리자 회원 목록: 유형 필터와 검색어(이름·아이디·연락처·매장명·SNS 주소)를 적용한 표의 줄
@@ -695,14 +722,14 @@
       body = siteSettings();
     } else if (state.adminTab === 'users') {
       body = `${userFilter()}<div class="table-wrap"><table>
-        <thead><tr><th>유형</th>${sortHead('name', '이름')}<th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th>${sortHead('count', '공고 참여 · 등록')}${sortHead('createdAt', '가입일')}<th>이용권 (유선 결제)</th><th></th></tr></thead>
+        <thead><tr><th>유형</th>${sortHead('name', '이름')}<th>아이디</th><th>연락처</th><th>SNS 채널 / 매장명</th>${sortHead('count', '공고 참여 · 등록')}${sortHead('createdAt', '가입일')}<th>요금제 (계좌이체 확인 후 지정)</th><th></th></tr></thead>
         <tbody id="user-rows">${userRows()}</tbody></table></div>`;
     } else if (state.adminTab === 'campaigns') {
       body = `<div class="table-wrap"><table>
         <thead><tr><th>매장명</th><th>사장님</th><th>휴대폰</th><th>상태</th><th>마감일</th><th>신청</th><th>선정</th><th></th></tr></thead>
         <tbody>${Store.campaigns().sort((a, b) => (b.approval === 'pending') - (a.approval === 'pending')).map(c => `<tr>
           <td><a href="#/campaign/${c.id}">${esc(c.storeName)}</a></td>
-          <td>${esc((Store.user(c.ownerId) || {}).name || '-')} <span class="badge ${Store.isPaid(Store.user(c.ownerId)) ? 'badge-ok' : 'badge-no'}">${Store.isPaid(Store.user(c.ownerId)) ? '결제받음' : '결제받지않음'}</span></td>
+          <td>${esc((Store.user(c.ownerId) || {}).name || '-')} <span class="badge ${Store.hasPlan(Store.user(c.ownerId)) ? 'badge-ok' : 'badge-no'}">${Store.hasPlan(Store.user(c.ownerId)) ? PLAN_LABEL[Store.user(c.ownerId).plan] : '요금제 없음'}</span></td>
           <td>${Store.ownerPhone(c.id) ? `<a href="tel:${esc(Store.ownerPhone(c.id))}">${esc(Store.ownerPhone(c.id))}</a>` : '<span class="muted">-</span>'}</td>
           <td>${openBadge(c)}</td><td>${esc(c.deadline)}</td>
           <td>${Store.applicationsByCampaign(c.id).length}명</td><td>${Store.pickedCount(c.id)}/${c.capacity}명</td>
@@ -748,7 +775,7 @@
   function ownerLanding() {
     const u = Store.currentUser();
     const cta = u && u.role === 'owner'
-      ? `<a class="btn btn-dark btn-lg" href="#/post/new">모집글 등록하기 ${ICON.arrow}</a>`
+      ? `<a class="btn btn-dark btn-lg" href="#/post/new" data-action="new-post">모집글 등록하기 ${ICON.arrow}</a>`
       : `<a class="btn btn-dark btn-lg" href="#/signup/owner">사장님으로 가입하기 ${ICON.arrow}</a>`;
     return `
     <section class="hero hero-md" style="background-image:url('${media('ownerBg')}')">
@@ -844,7 +871,7 @@
     <section class="ads-sec ads-sec-soft ads-report">
       <div class="container">
         <h2>진행 중에 바로바로 확인하는 리포트!</h2>
-        <p class="ads-sub">전화로 물어볼 필요 없이, 사장님 마이페이지에서 지금 어디까지 진행됐는지 바로 봅니다.</p>
+        <p class="ads-sub">전화로 물어볼 필요 없이, 사장님 마이페이지에서 지금 어디까지 진행됐는지 바로 봅니다.<br><b>선정부터 진행까지 체험픽 관리자가 도와드리고</b>, 직접 고르고 싶은 분은 직접 선정할 수도 있습니다.</p>
         <div class="ads-tabs">
           <button type="button" class="on" data-action="ads-tab" data-tab="0">진행 현황</button>
           <button type="button" data-action="ads-tab" data-tab="1">신청자 · 선정</button>
@@ -859,7 +886,8 @@
           </div>
           <div class="ads-tab-panel">
             <div class="ads-tab-text"><h3>신청한 리뷰어를 보고 직접 선정</h3>
-              <p>신청자의 <b>SNS 채널, 신청 한마디, 신청일</b>을 표로 보고 선정·탈락을 누릅니다. 선정하면 연락처가 열리고, 리뷰어가 체험권을 쓰면 <b>사용 완료</b>로 바뀝니다.</p>
+              <p>신청자의 <b>SNS 채널, 신청 한마디, 신청일</b>을 표로 보고 선정·탈락을 누릅니다. 선정하면 연락처가 열리고, 리뷰어가 초대권을 쓰면 <b>사용 완료</b>로 바뀝니다.</p>
+              <p class="ads-tab-help">바쁘시면 <b>체험픽 관리자가 선정부터 진행까지 대신</b> 해 드립니다. 직접 고르고 싶은 분은 언제든 직접 선정할 수 있어요.</p>
               <ul class="ads-tab-points"><li>${ICON.check}채널 링크를 눌러 계정을 바로 확인</li><li>${ICON.check}정원이 차면 자동으로 모집 마감</li><li>${ICON.check}선정 취소 · 탈락 취소도 한 번에</li></ul></div>
             ${phone('assets/img/ads-report-2.jpg', '신청자 선정 화면')}
           </div>
@@ -1344,22 +1372,22 @@
       document.querySelectorAll('.user-filter .pill').forEach(p => p.classList.toggle('on', p.dataset.role === state.userRole));
       document.getElementById('user-rows').innerHTML = userRows();
     },
-    'set-paid': async el => {
+    'set-plan': async el => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const u = Store.user(el.dataset.id);
+      const plan = document.querySelector(`[data-paid-plan="${el.dataset.id}"]`).value;
       const until = document.querySelector(`[data-paid-date="${el.dataset.id}"]`).value;
-      if (!u || !until || until < Store.today()) return toast('이용 종료일을 오늘 이후 날짜로 선택해 주세요.');
-      if (!confirm(`${u.name}님(${u.storeName || '매장명 없음'})을 ${until}까지 "결제받음"으로 처리할까요?`)) return;
-      await Store.setPaid(u.id, until);
-      toast('결제받음으로 처리했습니다.');
-      refresh();
-    },
-    'unset-paid': async el => {
-      if (!isAdmin()) return toast('권한이 없습니다.');
-      const u = Store.user(el.dataset.id);
-      if (!u || !confirm(`${u.name}님을 "결제받지않음"으로 바꿀까요?\n새 모집글을 등록할 수 없게 됩니다.`)) return;
-      await Store.setPaid(u.id, null);
-      toast('결제받지않음으로 처리했습니다.');
+      if (!u) return;
+      if (!plan) {
+        if (!confirm(`${u.name}님(${u.storeName || '매장명 없음'})의 요금제를 해제할까요?\n이후 등록하는 모집글은 승인 후 게시됩니다.`)) return;
+        await Store.setPlan(u.id, null, null);
+        toast('요금제를 해제했습니다.');
+      } else {
+        if (!until || until < Store.today()) return toast('이용 종료일을 오늘 이후 날짜로 선택해 주세요.');
+        if (!confirm(`${u.name}님(${u.storeName || '매장명 없음'})에게 ${PLAN_LABEL[plan]} 요금제를 ${until}까지 적용할까요?\n이후 등록하는 모집글은 승인 없이 바로 게시됩니다.`)) return;
+        await Store.setPlan(u.id, plan, until);
+        toast(`${PLAN_LABEL[plan]} 요금제를 적용했습니다.`);
+      }
       refresh();
     },
     'sns-add': () => {
@@ -1551,9 +1579,10 @@
       };
       const saved = await Store.saveCampaign(data, id || undefined);
       state.pendingImage = null;
-      toast(!old ? '등록 신청했습니다. 관리자 승인 후 게시됩니다.' : saved.approval === 'pending' && old.approval === 'rejected' ? '수정하고 다시 신청했습니다.' : '모집글을 수정했습니다.');
+      toast(!old ? (saved.approval === 'approved' ? '모집글을 등록했습니다. 사이트에 바로 게시되었습니다.' : '등록 신청했습니다. 관리자 승인 후 게시됩니다.')
+        : saved.approval === 'pending' && old.approval === 'rejected' ? '수정하고 다시 신청했습니다.' : '모집글을 수정했습니다.');
       go(saved.approval === 'approved' ? '/campaign/' + saved.id : u.role === 'admin' ? '/admin/campaigns' : '/my');
-      if (!old) showModal('등록 신청이 접수되었습니다', bankHtml());
+      if (!old && saved.approval !== 'approved') showModal('등록 신청이 접수되었습니다', bankHtml());
     }
   };
 
@@ -1616,6 +1645,12 @@
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-action]');
     if (!el) return;
+    // 모집글 등록 버튼: 요금제가 없는 사장님에게는 이동을 막고 요금제·입금 안내를 먼저 보여 줌
+    if (el.dataset.action === 'new-post') {
+      const u = me();
+      if (u && u.role === 'owner' && !Store.hasPlan(u)) { e.preventDefault(); showPlanModal(); }
+      return;
+    }
     run(() => actions[el.dataset.action](el));
   });
   document.addEventListener('submit', e => {
