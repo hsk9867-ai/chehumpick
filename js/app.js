@@ -47,10 +47,11 @@
     submitted: [['done', '리뷰 확인 · 완료', true]],
     done: []
   };
+  // 관리자는 사장님 대신 선정·탈락도 처리할 수 있음 (선정부터 진행까지 대행)
   const ADMIN_BUTTONS = {
-    applied: [],
-    selected: [],
-    rejected: [],
+    applied: [['selected', '선정', true], ['rejected', '탈락']],
+    selected: [['applied', '선정 취소']],
+    rejected: [['applied', '탈락 취소']],
     submitted: [['done', '완료 처리', true], ['selected', '재제출 요청']],
     done: [['submitted', '완료 취소']]
   };
@@ -757,7 +758,7 @@
             <td>${esc(a.createdAt)}</td>
             <td>${badge(a.status)}</td>
             <td>${a.reviewUrl ? `<a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">링크 확인</a>` : '<span class="muted">-</span>'}</td>
-            <td class="nowrap">${ADMIN_BUTTONS[a.status].map(([to, label, dark]) =>
+            <td class="nowrap">${ADMIN_BUTTONS[a.status].filter(([to]) => to !== 'selected' || a.status !== 'applied' || Store.pickedCount(c.id) < c.capacity).map(([to, label, dark]) =>
               `<button class="btn ${dark ? 'btn-dark' : 'btn-soft'} btn-sm" data-action="set-status" data-id="${a.id}" data-status="${to}" data-label="${label}">${label}</button>`).join(' ')}</td>
           </tr>`;
         }).join('') || '<tr><td colspan="7" class="muted">신청 내역이 없습니다.</td></tr>'}</tbody></table></div>`;
@@ -871,7 +872,7 @@
     <section class="ads-sec ads-sec-soft ads-report">
       <div class="container">
         <h2>진행 중에 바로바로 확인하는 리포트!</h2>
-        <p class="ads-sub">전화로 물어볼 필요 없이, 사장님 마이페이지에서 지금 어디까지 진행됐는지 바로 봅니다.<br><b>선정부터 진행까지 체험픽 관리자가 도와드리고</b>, 직접 고르고 싶은 분은 직접 선정할 수도 있습니다.</p>
+        <p class="ads-sub"><b>선정부터 진행까지 체험픽 관리자가 도와드리고</b>, 직접 고르고 싶은 분은 직접 선정할 수도 있습니다.</p>
         <div class="ads-tabs">
           <button type="button" class="on" data-action="ads-tab" data-tab="0">진행 현황</button>
           <button type="button" data-action="ads-tab" data-tab="1">신청자 · 선정</button>
@@ -904,7 +905,6 @@
     <section class="ads-sec">
       <div class="container">
         <h2>리뷰 품질은 미션으로!</h2>
-        <p class="ads-sub">채널별 리뷰 미션 가이드가 모집글에 자동으로 붙어, 리뷰어에게 매번 설명할 필요가 없습니다.</p>
         <div class="ads-feats">
           ${feature('guide', '채널별 미션 가이드', '블로그는 사진 15장 · 1,000자, 인스타 피드는 해시태그, 릴스는 15~30초 세로 영상처럼 채널마다 기준이 정해져 있습니다.')}
           ${feature('shield', '협찬 표기 · 12개월 유지', '모든 리뷰어가 #협찬 #체험픽 표기와 12개월 게시 유지 규정을 안내받습니다.')}

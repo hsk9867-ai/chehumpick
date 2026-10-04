@@ -96,8 +96,8 @@ window.CHEHUMPICK_DEFAULTS = {
     '📱 | 9:16 세로 | 세로 화면(9:16) 고화질로 촬영해 주세요.',
     '⚡ | 초반 임팩트 | 처음 몇 초 안에 시선을 끄는 장면을 넣어 끝까지 보게 해 주세요.'
   ].join('\n'),
-  bankInfo: '입금 계좌: (관리자 페이지 > 사이트 설정 > 입금 안내에서 계좌를 입력해 주세요)',
-  bankNotice: '입금이 확인되면 공고 등록을 승인해 드립니다.',
+  bankInfo: '농협 356-1171-8356-33\n예금주: 이윤희',
+  bankNotice: '입금 후 카카오톡으로 알려 주시면 확인하고 요금제를 적용해 드립니다.',
   contactEmail: 'cheheompick@naver.com',
   categories: '맛집, 카페, 디저트, 주점',
   footerTagline: '좋은 경험이\n특별한 콘텐츠가 되는 곳',
