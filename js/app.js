@@ -39,12 +39,12 @@
     done: { label: '완료', inf: '완료', cls: 'done' }
   };
   // 상태별로 보여 줄 버튼: [바꿀 상태, 버튼 이름, 강조 여부]
-  // 선정·탈락은 사장님이, 리뷰 확인(완료 처리)은 관리자가 담당
+  // 선정·탈락과 리뷰 확인(완료 처리)은 사장님이, 재제출 요청·완료 취소는 관리자가 담당
   const OWNER_BUTTONS = {
     applied: [['selected', '선정', true], ['rejected', '탈락']],
     selected: [['applied', '선정 취소']],
     rejected: [['applied', '탈락 취소']],
-    submitted: [],
+    submitted: [['done', '리뷰 확인 · 완료', true]],
     done: []
   };
   const ADMIN_BUTTONS = {
@@ -57,6 +57,16 @@
   const STEPS =['applied', 'selected', 'submitted', 'done'];
   // 선정 확인 코드: 신청 번호 앞 6자리. 리뷰어 확인증과 사장님 신청자 표에 같은 코드가 보임
   const pickCode = a => String(a.id).replace(/-/g, '').slice(0, 6).toUpperCase();
+  // QR 확인증 주소: 사장님이 휴대폰 카메라로 찍으면 확인 화면이 열림
+  const checkUrl = a => `${location.origin}${location.pathname}#/check/${a.id}`;
+  function qrSvg(text) {
+    if (typeof qrcode !== 'function') return '';
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    return qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  }
+  const visitedLabel = a => a.visitedAt ? `체험 완료 ${md(a.visitedAt)}` : '';
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
   const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', userQ: '', userRole: '전체', userSort: 'createdAt', userSortDesc: false, afterLogin: null, pendingImage: null };
@@ -437,10 +447,15 @@
       if (a.status === 'selected') body = `
         <div class="pick-card">
           <div class="pick-card-head"><span class="pick-card-brand">체험픽 선정 확인증</span><span class="pick-card-code">${pickCode(a)}</span></div>
-          <p class="pick-card-store">${esc(c.storeName)}</p>
-          <p class="pick-card-menu">${esc(c.menu)} · ${won(c.amount)} 상당</p>
-          <dl class="pick-card-info"><div><dt>리뷰어</dt><dd>${esc(u.name)}</dd></div><div><dt>방문 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div></dl>
-          <p class="pick-card-note">매장 방문 시 이 화면을 보여 주세요. 사장님은 신청자 목록의 확인 코드와 이름으로 대조합니다.</p>
+          <div class="pick-card-body">
+            <div>
+              <p class="pick-card-store">${esc(c.storeName)}</p>
+              <p class="pick-card-menu">${esc(c.menu)} · ${won(c.amount)} 상당</p>
+              <dl class="pick-card-info"><div><dt>리뷰어</dt><dd>${esc(u.name)}</dd></div><div><dt>방문 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div></dl>
+            </div>
+            <div class="pick-card-qr ${a.visitedAt ? 'used' : ''}">${qrSvg(checkUrl(a))}${a.visitedAt ? '<span class="pick-card-used">사용 완료</span>' : ''}</div>
+          </div>
+          <p class="pick-card-note">${a.visitedAt ? `${visitedLabel(a)} · 이제 리뷰를 올리고 아래에 링크를 제출해 주세요.` : '매장 방문 시 이 화면을 보여 주세요. 사장님이 QR을 찍으면 체험 완료로 기록됩니다.'}</p>
         </div>
         <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>${Store.reservePhone(c.id) ? `예약 연락처: <a href="tel:${esc(Store.reservePhone(c.id))}"><b>${esc(Store.reservePhone(c.id))}</b></a> (방문 하루 전까지 예약 필수)<br>` : ''}기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
@@ -448,7 +463,7 @@
           <button class="btn btn-dark">리뷰 링크 제출</button>
         </form>
         <button type="button" class="btn btn-soft btn-sm danger cancel-apply" data-action="cancel-apply" data-id="${a.id}">선정 취소 (체험 포기)</button>`;
-      if (a.status === 'submitted') body = `<p class="note">제출한 링크: <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">${esc(a.reviewUrl)}</a><br>관리자가 리뷰를 확인하고 있습니다.</p>`;
+      if (a.status === 'submitted') body = `<p class="note">제출한 링크: <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">${esc(a.reviewUrl)}</a><br>사장님 또는 관리자가 리뷰를 확인하면 완료됩니다.</p>`;
       if (a.status === 'done') body = `<p class="note">체험이 완료되었습니다. 감사합니다! <a href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">제출한 리뷰 보기</a></p>`;
       return `<article class="my-item">
         <a class="my-thumb" href="#/campaign/${c.id}"><img src="${esc(c.image)}" alt=""></a>
@@ -476,7 +491,7 @@
     if (!apps.length) return '<p class="note">아직 신청자가 없습니다.</p>';
     const full = Store.pickedCount(c.id) >= c.capacity;
     return `<div class="table-wrap"><table>
-      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>연락처</th><th>확인 코드</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>연락처</th><th>확인 코드 · 체험 완료</th><th></th></tr></thead>
       <tbody>${apps.map(a => {
         const inf = Store.user(a.userId) || {};
         const picked = ['selected', 'submitted', 'done'].includes(a.status);
@@ -487,7 +502,7 @@
           <td>${esc(a.createdAt)}</td>
           <td>${badge(a.status)}</td>
           <td>${picked ? esc(inf.phone) : '<span class="muted">선정 후 공개</span>'}</td>
-          <td>${picked ? `<code class="pick-code">${pickCode(a)}</code>` : '<span class="muted">-</span>'}</td>
+          <td class="nowrap">${picked ? `<code class="pick-code">${pickCode(a)}</code> ${a.visitedAt ? `<span class="badge badge-ok">${visitedLabel(a)}</span>` : `<button class="btn btn-soft btn-sm" data-action="mark-visited" data-id="${a.id}">체험 완료 처리</button>`}` : '<span class="muted">-</span>'}</td>
           <td class="nowrap">${OWNER_BUTTONS[a.status].filter(([to]) => to !== 'selected' || !full).map(([to, label, dark]) =>
             `<button class="btn ${dark ? 'btn-dark' : 'btn-soft'} btn-sm" data-action="owner-status" data-id="${a.id}" data-status="${to}" data-label="${label}">${label}</button>`).join(' ')}</td>
         </tr>`;
@@ -851,6 +866,49 @@
     </section>`;
   }
 
+  /* ---------- QR 확인증 확인 화면 (사장님이 QR을 찍으면 열림) ---------- */
+  function checkPage(id) {
+    const u = Store.currentUser();
+    const a = Store.applications().find(x => x.id === id);
+    const c = a && Store.campaign(a.campaignId);
+    if (!a || !c) return `<section class="container section narrow"><div class="check-box bad"><h1>확인할 수 없는 확인증입니다</h1>
+      <p>내 매장의 모집글에 선정된 리뷰어의 확인증이 아니거나, 신청이 취소되었습니다. 사장님 계정으로 로그인했는지 확인해 주세요.</p>
+      <a class="btn btn-soft" href="#/my">마이페이지로</a></div></section>`;
+    const inf = Store.user(a.userId) || {};
+    const manage = u.role === 'admin' || c.ownerId === u.id;
+    const picked = ['selected', 'submitted', 'done'].includes(a.status);
+    let state, action = '';
+    if (!picked) { state = ['bad', '선정되지 않은 신청입니다', '이 리뷰어는 아직 선정되지 않았거나 미선정 처리되었습니다.']; }
+    else if (a.status === 'done') { state = ['ok', '체험과 리뷰가 모두 완료되었습니다', `${visitedLabel(a) || '체험 완료'} · 리뷰 확인 완료`]; }
+    else if (a.status === 'submitted') {
+      state = ['ok', '리뷰 링크가 제출되었습니다', `${visitedLabel(a) || '체험 완료 기록 없음'} · 리뷰를 확인하고 완료 처리해 주세요.`];
+      if (manage) action = `<a class="btn btn-soft" href="${safeUrl(a.reviewUrl)}" target="_blank" rel="noopener">리뷰 보기</a>
+        <button class="btn btn-dark btn-lg" data-action="owner-status" data-id="${a.id}" data-status="done" data-label="리뷰 확인 · 완료">리뷰 확인 · 완료 처리</button>`;
+    } else if (a.visitedAt) { state = ['ok', '이미 사용된 확인증입니다', `${visitedLabel(a)} · 리뷰 제출을 기다리는 중입니다.`]; }
+    else {
+      const inPeriod = c.visitStart <= Store.today() && Store.today() <= c.visitEnd;
+      state = ['good', '선정된 리뷰어입니다', inPeriod ? '방문 가능 기간 안입니다. 체험을 제공한 뒤 아래 버튼을 눌러 주세요.' : `방문 가능 기간(${c.visitStart} ~ ${c.visitEnd})이 아닙니다. 제공 여부는 사장님이 판단해 주세요.`];
+      if (manage) action = `<button class="btn btn-dark btn-lg" data-action="mark-visited" data-id="${a.id}">체험 완료 처리</button>`;
+    }
+    return `
+    <section class="container section narrow">
+      <div class="check-box ${state[0]}">
+        <span class="badge badge-done">체험픽 확인증</span>
+        <h1>${state[1]}</h1>
+        <p class="check-desc">${state[2]}</p>
+        <dl class="info">
+          <div><dt>리뷰어</dt><dd>${esc(inf.name || '-')} ${manage && inf.phone ? `· <a href="tel:${esc(inf.phone)}">${esc(inf.phone)}</a>` : ''}</dd></div>
+          <div><dt>SNS 채널</dt><dd>${snsLinks(inf)}</dd></div>
+          <div><dt>매장</dt><dd>${esc(c.storeName)}</dd></div>
+          <div><dt>체험 메뉴</dt><dd>${esc(c.menu)} · ${won(c.amount)} 상당</dd></div>
+          <div><dt>방문 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div>
+          <div><dt>확인 코드</dt><dd><code class="pick-code">${pickCode(a)}</code></dd></div>
+        </dl>
+        ${manage ? `<div class="check-actions">${action}</div>` : '<p class="note">사장님 또는 관리자 계정으로 로그인하면 체험 완료를 처리할 수 있습니다.</p>'}
+      </div>
+    </section>`;
+  }
+
   /* ---------- 9~11. 안내 화면 ---------- */
   function faq() {
     return `
@@ -1047,6 +1105,7 @@
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
     [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
     [/^\/ads$/, adsPage],
+    [/^\/check\/([\w-]+)$/, guard(['influencer', 'owner', 'admin'], checkPage)],
     [/^\/owner$/, ownerLanding],
     [/^\/account$/, guard(['influencer', 'owner', 'admin'], account)],
     [/^\/find$/, find],
@@ -1142,12 +1201,22 @@
       try { await Store.cancelApplication(a.id); toast(a.status === 'selected' ? '선정된 체험을 취소했습니다.' : '신청을 취소했습니다.'); }
       finally { refresh(); }
     },
+    'mark-visited': async el => {
+      const a = Store.applications().find(x => x.id === el.dataset.id);
+      const c = a && Store.campaign(a.campaignId);
+      if (!a || !c || !canManage(c.id)) return toast('권한이 없습니다.');
+      const name = (Store.user(a.userId) || {}).name || '리뷰어';
+      if (!confirm(`[${c.storeName}] ${name}님의 체험을 완료 처리할까요?\n확인증이 사용 완료로 바뀌며 되돌릴 수 없습니다.`)) return;
+      await Store.markVisited(a.id);
+      toast('체험 완료로 기록했습니다.');
+      refresh();
+    },
     'owner-status': el => {
       const u = me();
       const a = Store.applications().find(x => x.id === el.dataset.id);
       const c = a && Store.campaign(a.campaignId);
-      if (!u || !c || c.ownerId !== u.id) return toast('권한이 없습니다.');
-      return changeStatus(a, c, el, OWNER_BUTTONS);
+      if (!u || !c || !(c.ownerId === u.id || u.role === 'admin')) return toast('권한이 없습니다.');
+      return changeStatus(a, c, el, u.role === 'admin' && c.ownerId !== u.id ? ADMIN_BUTTONS : OWNER_BUTTONS);
     },
     'close-selection': async el => {
       const c = Store.campaign(el.dataset.id);

@@ -46,7 +46,7 @@
     description: d.description, conditions: d.conditions
   });
   const toApplication = r => ({
-    id: r.id, campaignId: r.campaign_id, userId: r.user_id, status: r.status, reviewUrl: r.review_url, message: r.message || '',
+    id: r.id, campaignId: r.campaign_id, userId: r.user_id, status: r.status, reviewUrl: r.review_url, message: r.message || '', visitedAt: r.visited_at ? day(r.visited_at) : '',
     createdAt: day(r.created_at), updatedAt: day(r.updated_at)
   });
 
@@ -233,6 +233,11 @@
       const removed = ok(await sb.from('applications').delete().eq('id', id).in('status', ['applied', 'selected']).select('id'));
       await refresh();
       if (!removed.length) throw new Error('지금 상태에서는 취소할 수 없습니다. 고객센터로 문의해 주세요.');
+    },
+    // 체험 완료(방문 확인): 사장님이 매장에서 QR 확인증을 찍고 처리
+    async markVisited(id) {
+      ok(await sb.from('applications').update({ visited_at: new Date().toISOString() }).eq('id', id));
+      return done();
     },
     async setApplicationStatus(id, status) {
       ok(await sb.from('applications').update({ status }).eq('id', id));
