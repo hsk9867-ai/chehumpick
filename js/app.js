@@ -55,6 +55,8 @@
     done: [['submitted', '완료 취소']]
   };
   const STEPS =['applied', 'selected', 'submitted', 'done'];
+  // 선정 확인 코드: 신청 번호 앞 6자리. 리뷰어 확인증과 사장님 신청자 표에 같은 코드가 보임
+  const pickCode = a => String(a.id).replace(/-/g, '').slice(0, 6).toUpperCase();
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
   const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', userQ: '', userRole: '전체', userSort: 'createdAt', userSortDesc: false, afterLogin: null, pendingImage: null };
@@ -433,6 +435,13 @@
         <button type="button" class="btn btn-soft btn-sm danger cancel-apply" data-action="cancel-apply" data-id="${a.id}">신청 취소</button>`;
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
+        <div class="pick-card">
+          <div class="pick-card-head"><span class="pick-card-brand">체험픽 선정 확인증</span><span class="pick-card-code">${pickCode(a)}</span></div>
+          <p class="pick-card-store">${esc(c.storeName)}</p>
+          <p class="pick-card-menu">${esc(c.menu)} · ${won(c.amount)} 상당</p>
+          <dl class="pick-card-info"><div><dt>리뷰어</dt><dd>${esc(u.name)}</dd></div><div><dt>방문 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div></dl>
+          <p class="pick-card-note">매장 방문 시 이 화면을 보여 주세요. 사장님은 신청자 목록의 확인 코드와 이름으로 대조합니다.</p>
+        </div>
         <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>${Store.reservePhone(c.id) ? `예약 연락처: <a href="tel:${esc(Store.reservePhone(c.id))}"><b>${esc(Store.reservePhone(c.id))}</b></a> (방문 하루 전까지 예약 필수)<br>` : ''}기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
           <input type="url" name="url" placeholder="리뷰 게시물 주소 (https://...)" value="${esc(a.reviewUrl)}">
@@ -467,7 +476,7 @@
     if (!apps.length) return '<p class="note">아직 신청자가 없습니다.</p>';
     const full = Store.pickedCount(c.id) >= c.capacity;
     return `<div class="table-wrap"><table>
-      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>연락처</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th>SNS 채널</th><th>신청 한마디</th><th>신청일</th><th>상태</th><th>연락처</th><th>확인 코드</th><th></th></tr></thead>
       <tbody>${apps.map(a => {
         const inf = Store.user(a.userId) || {};
         const picked = ['selected', 'submitted', 'done'].includes(a.status);
@@ -478,6 +487,7 @@
           <td>${esc(a.createdAt)}</td>
           <td>${badge(a.status)}</td>
           <td>${picked ? esc(inf.phone) : '<span class="muted">선정 후 공개</span>'}</td>
+          <td>${picked ? `<code class="pick-code">${pickCode(a)}</code>` : '<span class="muted">-</span>'}</td>
           <td class="nowrap">${OWNER_BUTTONS[a.status].filter(([to]) => to !== 'selected' || !full).map(([to, label, dark]) =>
             `<button class="btn ${dark ? 'btn-dark' : 'btn-soft'} btn-sm" data-action="owner-status" data-id="${a.id}" data-status="${to}" data-label="${label}">${label}</button>`).join(' ')}</td>
         </tr>`;

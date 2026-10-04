@@ -470,3 +470,17 @@ body.event-open { overflow: hidden; }
 .ads-cmp th.ads-cmp-pick { color: #ff2e8d; }
 .ads-care { padding-top: 0; }
 @media (max-width: 640px) { .ads-cmp th:first-child { width: 72px; } .ads-cmp td { font-size: 13px; } }
+
+/* 선정 확인증 · 확인 코드 */
+.pick-card { margin-top: 12px; background: #0d0d10; color: #fff; border-radius: 16px; padding: 18px 20px; background-image: radial-gradient(circle at 100% 0%, rgba(255, 46, 141, .45), transparent 55%); }
+.pick-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pick-card-brand { font-size: 12.5px; font-weight: 700; color: rgba(255, 255, 255, .75); letter-spacing: .04em; }
+.pick-card-code { font-family: ui-monospace, Consolas, monospace; font-size: 24px; font-weight: 800; letter-spacing: .14em; color: #ffd84d; }
+.pick-card-store { margin-top: 12px; font-size: 20px; font-weight: 800; }
+.pick-card-menu { font-size: 13.5px; color: rgba(255, 255, 255, .8); }
+.pick-card-info { margin: 12px 0 0; display: flex; gap: 22px; flex-wrap: wrap; }
+.pick-card-info div { display: flex; gap: 8px; font-size: 13.5px; }
+.pick-card-info dt { color: rgba(255, 255, 255, .6); }
+.pick-card-info dd { margin: 0; font-weight: 700; }
+.pick-card-note { margin-top: 12px; font-size: 12.5px; color: rgba(255, 255, 255, .7); }
+.pick-code { font-family: ui-monospace, Consolas, monospace; font-weight: 800; letter-spacing: .1em; background: #fff8e1; color: var(--ink); padding: 3px 8px; border-radius: 6px; }
