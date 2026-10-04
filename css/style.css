@@ -541,3 +541,34 @@ body.event-open { overflow: hidden; }
 .ads-tab-points svg { color: #ff2e8d; flex: none; }
 .ads-tab-panel .ads-phone { margin: 0; width: 250px; flex: none; }
 @media (max-width: 640px) { .stats-sm { grid-template-columns: repeat(5, 1fr); } .stats-sm b { font-size: 17px; } .stats-sm span { font-size: 11px; } .ads-tabs { display: flex; } .ads-tabs button { flex: 1; padding: 9px 6px; font-size: 13px; } .ads-tab-panel.on { flex-direction: column; gap: 26px; } }
+
+/* 방문 초대권 */
+.invite-page { max-width: 560px; }
+.invite { border-radius: 18px; overflow: hidden; box-shadow: 0 14px 40px rgba(0, 0, 0, .12); background: #fff; }
+.invite-head { position: relative; background: linear-gradient(135deg, #ff2e8d, #ff6fb1); color: #fff; padding: 26px 24px 24px; }
+.invite-head h1 { color: #fff; font-size: 26px; font-weight: 800; }
+.invite-head h1 em { font-style: normal; color: #ffe066; }
+.invite-head p { margin-top: 6px; font-size: 14px; color: rgba(255, 255, 255, .92); }
+.invite-info { display: inline-block; margin-top: 14px; border: 1.5px solid rgba(255, 255, 255, .85); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; color: #fff; }
+.invite-stamp { position: absolute; right: 18px; top: 50%; transform: translateY(-50%) rotate(-12deg); width: 86px; height: 86px; border: 3px double #fff; border-radius: 50%; display: grid; place-items: center; text-align: center; font-size: 15px; font-weight: 900; line-height: 1.15; letter-spacing: .02em; opacity: .95; }
+.invite.used .invite-head { background: linear-gradient(135deg, #5d636d, #8a909a); }
+.invite.used .invite-head h1 em { color: #fff; }
+.invite-body { padding: 22px 24px; }
+.invite-body h2 { font-size: 17px; margin-bottom: 8px; }
+.invite-info-list { margin: 0; border-top: 2px solid var(--ink); }
+.invite-info-list > div { display: flex; gap: 14px; padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.invite-info-list dt { flex: none; width: 74px; font-weight: 700; color: #ff2e8d; }
+.invite-info-list dd { margin: 0; min-width: 0; }
+.invite-info-list b { color: var(--ink); font-size: 15.5px; }
+.invite-tel { display: inline-flex; align-items: center; gap: 8px; }
+.invite-call { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff0f6; font-size: 15px; }
+.invite-warn { margin-top: 16px; background: #fff0f6; border: 1.5px solid #ffc2dd; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; color: #7a2a4e; }
+.invite-warn b { display: block; color: #d61b6f; margin-bottom: 8px; }
+.invite-warn ul { display: grid; gap: 6px; }
+.invite-foot { background: var(--ink); color: #fff; padding: 18px 24px 22px; text-align: center; }
+.invite-store { font-size: 16px; font-weight: 800; }
+.invite-who { margin-top: 6px; font-size: 13.5px; color: rgba(255, 255, 255, .85); }
+.invite-dates { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 13px; color: rgba(255, 255, 255, .85); }
+.invite-line { flex: 1; height: 1px; background: rgba(255, 255, 255, .35); }
+.invite-use { background: #ff2e8d; color: #fff; box-shadow: 0 8px 20px rgba(255, 46, 141, .35); }
+@media (max-width: 420px) { .invite-stamp { width: 72px; height: 72px; font-size: 13px; right: 12px; } .invite-head h1 { font-size: 22px; padding-right: 80px; } }

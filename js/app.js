@@ -56,6 +56,18 @@
   };
   const STEPS =['applied', 'selected', 'submitted', 'done'];
   const visitedLabel = a => a.visitedAt ? `사용 완료 ${md(a.visitedAt)}` : '';
+  // 방문 가능 기간 마지막 날까지 남은 날수
+  const daysLeft = c => Math.round((new Date(c.visitEnd) - new Date(Store.today())) / 86400000);
+  const daysLeftLabel = c => { const d = daysLeft(c); return d < 0 ? '기간 종료' : d === 0 ? '오늘까지' : `${d}일 남음`; };
+  // 체험 가이드에서 "# 방문 전" 항목만 뽑기 (초대권 예약 안내에 사용)
+  function guideSection(title) {
+    const out = []; let on = false;
+    lines(S.guide).forEach(l => {
+      if (l.startsWith('#')) { on = l.replace(/^#+\s*/, '') === title; return; }
+      if (on) out.push(l.replace(/^[*-]\s+/, ''));
+    });
+    return out;
+  }
   const ROLE_LABEL = { influencer: '인플루언서', owner: '사장님', admin: '관리자' };
 
   const state = { cat: '전체', region: '전체', snsDraft: null, q: '', adminTab: 'apps', userQ: '', userRole: '전체', userSort: 'createdAt', userSortDesc: false, afterLogin: null, pendingImage: null };
@@ -435,14 +447,14 @@
       if (a.status === 'rejected') body = '<p class="note">아쉽지만 이번 체험단에는 선정되지 않았습니다.</p>';
       if (a.status === 'selected') body = `
         <div class="pick-card ${a.visitedAt ? 'used' : ''}">
-          <div class="pick-card-head"><span class="pick-card-brand">체험픽 체험권</span><span class="pick-card-state">${a.visitedAt ? visitedLabel(a) : '사용 전'}</span></div>
+          <div class="pick-card-head"><span class="pick-card-brand">체험픽 방문 초대권</span><span class="pick-card-state">${a.visitedAt ? visitedLabel(a) : daysLeftLabel(c)}</span></div>
           <p class="pick-card-store">${esc(c.storeName)}</p>
           <p class="pick-card-menu">${esc(c.menu)} · ${won(c.amount)} 상당</p>
           <dl class="pick-card-info"><div><dt>리뷰어</dt><dd>${esc(u.name)}</dd></div><div><dt>방문 기간</dt><dd>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</dd></div></dl>
           ${a.visitedAt
-            ? '<p class="pick-card-note">체험권을 사용했습니다. 이제 리뷰를 올리고 아래에 링크를 제출해 주세요.</p>'
-            : `<p class="pick-card-note">매장에서 체험을 받은 뒤 아래 버튼을 눌러 주세요. 사장님 화면에 사용 완료로 표시됩니다.</p>
-          <button type="button" class="btn btn-yellow btn-block pick-card-use" data-action="use-voucher" data-id="${a.id}">체험권 사용 완료</button>`}
+            ? '<p class="pick-card-note">초대권을 사용했습니다. 이제 리뷰를 올리고 아래에 링크를 제출해 주세요.</p>'
+            : '<p class="pick-card-note">매장에 방문해 담당자에게 초대권을 보여 주고, 체험을 받은 뒤 사용처리해 주세요.</p>'}
+          <a class="btn ${a.visitedAt ? 'btn-soft' : 'btn-yellow'} btn-block pick-card-use" href="#/invite/${a.id}">${a.visitedAt ? '초대권 보기' : '초대권 열기'}</a>
         </div>
         <div class="visit"><b>🎉 선정되었습니다!</b> 방문 가능 기간: <b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br>${Store.reservePhone(c.id) ? `예약 연락처: <a href="tel:${esc(Store.reservePhone(c.id))}"><b>${esc(Store.reservePhone(c.id))}</b></a> (방문 하루 전까지 예약 필수)<br>` : ''}기간 안에 방문한 뒤 리뷰 링크를 제출해 주세요. <a href="#/faq">방문·노쇼 안내와 체험 가이드 보기</a></div>
         <form data-form="review" data-id="${a.id}" class="inline-form" novalidate>
@@ -913,6 +925,53 @@
     </section>`;
   }
 
+  /* ---------- 방문 초대권 ---------- */
+  function invitePage(id) {
+    const u = Store.currentUser();
+    const a = Store.applications().find(x => x.id === id);
+    const c = a && Store.campaign(a.campaignId);
+    if (!a || !c || a.userId !== u.id) return notFound();
+    if (!['selected', 'submitted', 'done'].includes(a.status)) return `<section class="container section narrow"><p class="empty">아직 선정되지 않은 신청입니다.<br><a href="#/my">마이페이지로</a></p></section>`;
+    const used = !!a.visitedAt;
+    const d = daysLeft(c);
+    const phone = Store.reservePhone(c.id);
+    const rules = guideSection('방문 전');
+    const sido = sidoOf(c.region);
+    return `
+    <section class="container section narrow invite-page">
+      <a class="back" href="#/my">← 마이페이지</a>
+      <div class="invite ${used ? 'used' : ''}">
+        <div class="invite-head">
+          <span class="invite-stamp">${used ? '사용<br>완료' : '초·대·권<br>발급'}</span>
+          <h1>방문 초대권 <em>${used ? `· ${visitedLabel(a)}` : `– ${daysLeftLabel(c)}`}</em></h1>
+          <p>초대권을 꼭 업체 담당자에게 보여 주세요!</p>
+          <a class="invite-info" href="#/campaign/${c.id}">ⓘ 체험 정보 안내</a>
+        </div>
+        <div class="invite-body">
+          <h2>방문 및 예약</h2>
+          <dl class="invite-info-list">
+            <div><dt>방문 가능</dt><dd><b>${esc(c.visitStart)} ~ ${esc(c.visitEnd)}</b><br><span class="muted">기간 안에 예약 후 방문해 주세요.</span></dd></div>
+            <div><dt>예약 문의</dt><dd>${phone ? `<a class="invite-tel" href="tel:${esc(phone)}"><b>${esc(phone)}</b> <span class="invite-call" aria-hidden="true">📞</span></a>` : '<span class="muted">예약 연락처가 등록되지 않았습니다. 체험픽 카카오톡으로 문의해 주세요.</span>'}</dd></div>
+            <div><dt>제공 내용</dt><dd><b>${esc(c.menu)}</b> · ${won(c.amount)} 상당<br><span class="muted">${nl2br(c.description)}</span></dd></div>
+          </dl>
+          <div class="invite-warn">
+            <b>⚠ 해당 체험은 예약 필수입니다</b>
+            <ul>${(rules.length ? rules : ['방문 하루 전까지 매장에 예약해 주세요.', '예약 시 "체험픽 체험단"임을 밝혀 주세요.']).map(r => `<li>★ ${esc(r)}</li>`).join('')}
+              <li>★ 사전 연락 없는 당일 취소·노쇼는 이후 참여가 제한됩니다.</li></ul>
+          </div>
+        </div>
+        <div class="invite-foot">
+          <p class="invite-store">[${esc(sido)}][${esc(c.channel)}] ${esc(c.storeName)}</p>
+          <p class="invite-who">👤 ${esc(u.name)} · ${esc(u.phone || '')}</p>
+          <div class="invite-dates"><span>${esc(c.visitStart)}</span><span class="invite-line"></span><span>${esc(c.visitEnd)}</span></div>
+        </div>
+      </div>
+      <div class="sticky-action">${used
+        ? '<button class="btn btn-dark btn-block btn-lg" disabled>사용 완료된 초대권입니다</button>'
+        : `<button class="btn btn-block btn-lg invite-use" data-action="use-voucher" data-id="${a.id}">초대권 사용처리</button>`}</div>
+    </section>`;
+  }
+
   /* ---------- 9~11. 안내 화면 ---------- */
   function faq() {
     return `
@@ -1109,6 +1168,7 @@
     [/^\/post\/([\w-]+)\/edit$/, guard(['owner', 'admin'], postForm)],
     [/^\/admin(?:\/(apps|campaigns|users|site))?$/, guard(['admin'], admin)],
     [/^\/ads$/, adsPage],
+    [/^\/invite\/([\w-]+)$/, guard(['influencer'], invitePage)],
     [/^\/owner$/, ownerLanding],
     [/^\/account$/, guard(['influencer', 'owner', 'admin'], account)],
     [/^\/find$/, find],
@@ -1214,9 +1274,9 @@
       const c = a && Store.campaign(a.campaignId);
       if (!a || !c || !me() || a.userId !== me().id) return toast('권한이 없습니다.');
       if (a.status !== 'selected' || a.visitedAt) return toast('지금은 처리할 수 없습니다.');
-      if (!confirm(`[${c.storeName}] 체험권을 사용 완료로 표시할까요?\n매장에서 체험을 받은 뒤에 눌러 주세요. 되돌릴 수 없습니다.`)) return;
+      if (!confirm(`[${c.storeName}] 초대권을 사용처리할까요?\n매장에서 체험을 받은 뒤에 눌러 주세요. 되돌릴 수 없습니다.`)) return;
       await Store.markVisited(a.id);
-      toast('체험권을 사용 완료로 표시했습니다. 리뷰를 올린 뒤 링크를 제출해 주세요.');
+      toast('초대권을 사용처리했습니다. 리뷰를 올린 뒤 마이페이지에서 링크를 제출해 주세요.');
       refresh();
     },
     'owner-status': el => {
