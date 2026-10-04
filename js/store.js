@@ -234,7 +234,7 @@
       await refresh();
       if (!removed.length) throw new Error('지금 상태에서는 취소할 수 없습니다. 고객센터로 문의해 주세요.');
     },
-    // 체험 완료(방문 확인): 사장님이 매장에서 QR 확인증을 찍고 처리
+    // 체험권 사용 완료: 인플루언서 본인이 매장에서 체험을 받은 뒤 누름
     async markVisited(id) {
       ok(await sb.from('applications').update({ visited_at: new Date().toISOString() }).eq('id', id));
       return done();
