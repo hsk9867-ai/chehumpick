@@ -351,7 +351,6 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .sns-actions { display: flex; justify-content: space-between; margin-top: 12px; }
 .notice { border: 1.5px solid var(--ink); border-radius: var(--radius); padding: 22px; margin: 18px 0 36px; }
 .notice h2 { margin-top: 10px; }
-.notice.trial { border-color: #14794f; background: #f3fbf6; }
 .trial-panel { background: #f6f7f9; border-radius: 12px; padding: 14px 16px; font-size: 14.5px; }
 .trial-panel p { margin: 0; }
 .trial-panel .note { margin-top: 8px; }
@@ -433,6 +432,17 @@ body.event-open { overflow: hidden; }
 .event-slogan b { color: var(--ink); }
 .event-foot { display: flex; justify-content: space-between; padding: 0 26px 18px; }
 .event-foot .link-btn { font-size: 13.5px; }
+.event-box[hidden] { display: none; }
+.event-trial .event-head { background: #0f3d2a; }
+.event-trial .event-badge { background: #19a45f; }
+.event-trial .event-sub { color: #19a45f; }
+.event-until { display: inline-block; background: #e2f5ec; color: #14794f; border-radius: 999px; padding: 6px 14px; font-size: 13.5px; font-weight: 700; }
+.event-until b { color: #0f3d2a; }
+#trialBody { margin-top: 14px; }
+#trialBody .event-note:first-child { margin-top: 0; }
+.event-body .bullet { padding-left: 16px; position: relative; }
+.event-body .bullet::before { content: "•"; position: absolute; left: 2px; }
+.event-trial .btn-block { margin-top: 20px; }
 @media (max-width: 420px) { .event-head h2 { font-size: 32px; } .event-body, .event-head { padding-left: 20px; padding-right: 20px; } .event-foot { padding-left: 20px; padding-right: 20px; } .event-plans { gap: 8px; } }
 
 /* 광고주 센터 */

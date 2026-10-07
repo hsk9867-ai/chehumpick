@@ -65,7 +65,25 @@
 
   <!-- 오픈 기념 공지 팝업: 표시 기간은 js/app.js 의 NOTICE_UNTIL 에서 정합니다 -->
   <div class="event-pop" id="eventPop" hidden>
-    <div class="event-box" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+    <!-- 무료체험 팝업: 관리자 > 사이트 설정 > 무료체험 공지에서 시작하면 아래 할인 팝업 대신 뜹니다. 문구는 js/app.js 가 설정값으로 채웁니다 -->
+    <div class="event-box event-trial" id="eventTrial" role="dialog" aria-modal="true" aria-labelledby="trialTitle" hidden>
+      <button type="button" class="event-close" data-action="event-close" aria-label="닫기">✕</button>
+      <div class="event-head">
+        <span class="event-badge">FREE TRIAL</span>
+        <p class="event-kicker">체험픽 오픈 기념</p>
+        <h2 id="trialTitle"></h2>
+      </div>
+      <div class="event-body">
+        <p class="event-until">무료체험 기간 <b id="trialUntil"></b>까지</p>
+        <div id="trialBody"></div>
+        <a class="btn btn-dark btn-block btn-lg" href="#/campaigns" data-action="event-close">체험단 둘러보기 →</a>
+      </div>
+      <div class="event-foot">
+        <button type="button" class="link-btn" data-action="event-hide-today">오늘 하루 보지 않기</button>
+        <button type="button" class="link-btn" data-action="event-close">닫기</button>
+      </div>
+    </div>
+    <div class="event-box" id="eventDiscount" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
       <button type="button" class="event-close" data-action="event-close" aria-label="닫기">✕</button>
       <div class="event-head">
         <svg class="event-art" viewBox="0 0 440 200" aria-hidden="true">

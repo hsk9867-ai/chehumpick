@@ -1001,7 +1001,7 @@
     return `
     <section class="container section narrow">
       <h1>고객센터</h1>
-      ${noticeBox()}
+      ${S.notice ? `<div class="notice doc" id="notice"><span class="badge badge-done">공지</span><h2>${esc(S.noticeTitle)}</h2>${richText(S.notice)}</div>` : ''}
       ${S.guide ? `<div class="notice doc" id="guide"><span class="badge badge-done">안내</span><h2>${esc(S.guideTitle)}</h2>${richText(S.guide)}</div>` : ''}
       <h2 class="faq-title">자주 묻는 질문</h2>
       <p class="sub">${esc(S.faqIntro)}</p>
@@ -1011,15 +1011,8 @@
     </section>`;
   }
 
-  // 공지: 무료체험 기간(종료일이 지정됨)에는 무료체험 공지를, 해제하면 원래 공지를 보여 줌
+  // 무료체험 기간(종료일이 지정됨)이면 접속 시 뜨는 공지 팝업이 무료체험 안내로 바뀜. 해제하면 원래 오픈 기념 팝업으로 돌아감
   const trialOn = () => !!S.trialUntil;
-  function noticeBox() {
-    if (trialOn()) {
-      const text = S.trialNotice.split('{종료일}').join(S.trialUntil);
-      return `<div class="notice doc trial" id="notice"><span class="badge badge-ok">무료체험</span><h2>${esc(S.trialNoticeTitle)}</h2>${richText(text)}</div>`;
-    }
-    return S.notice ? `<div class="notice doc" id="notice"><span class="badge badge-done">공지</span><h2>${esc(S.noticeTitle)}</h2>${richText(S.notice)}</div>` : '';
-  }
 
   // 본문 서식: # 으로 시작하는 줄은 제목, * 또는 - 로 시작하는 줄은 목록, 나머지는 문단
   function richText(text) {
@@ -1041,8 +1034,8 @@
   // [키, 이름, 입력칸 줄 수(생략하면 한 줄)]
   const SETTING_GROUPS = [
     ['무료체험 공지', [
-      ['trialNoticeTitle', '무료체험 공지 제목'],
-      ['trialNotice', '무료체험 공지 내용 ({종료일} 은 무료체험 종료일로 바뀝니다. # 제목, * 목록)', 9]
+      ['trialNoticeTitle', '팝업 큰 제목 (줄을 바꾸면 팝업에서도 줄이 바뀝니다)', 2],
+      ['trialNotice', '팝업 내용 ({종료일} 은 무료체험 종료일로 바뀝니다. # 으로 시작하는 줄은 소제목, * 로 시작하는 줄은 목록)', 8]
     ], 'trial'],
     ['메인 화면', [
       ['heroTitle', '첫 문구 (줄을 바꾸면 화면에서도 줄이 바뀝니다)', 3],
@@ -1105,22 +1098,22 @@
     if (trialOn()) {
       const over = S.trialUntil < Store.today();
       return `<div class="trial-panel">
-        <p><span class="badge ${over ? 'badge-wait' : 'badge-ok'}">${over ? '종료일 지남' : '무료체험 공지 중'}</span> 고객센터에 무료체험 공지가 표시되고 있습니다. 종료일 <b>${esc(S.trialUntil)}</b>${over ? ' (지났습니다. 아래 버튼으로 해제해 주세요)' : ''}</p>
+        <p><span class="badge ${over ? 'badge-wait' : 'badge-ok'}">${over ? '종료일 지남' : '무료체험 공지 중'}</span> 접속할 때 뜨는 공지 팝업이 무료체험 안내로 표시되고 있습니다. 종료일 <b>${esc(S.trialUntil)}</b>${over ? ' (지났습니다. 아래 버튼으로 해제해 주세요)' : ''}</p>
         <div class="trial-actions">
           <input type="date" class="paid-date" id="trial-until" value="${esc(S.trialUntil)}" aria-label="무료체험 종료일">
           <button type="button" class="btn btn-soft btn-sm" data-action="start-trial">종료일 변경</button>
           <button type="button" class="btn btn-dark btn-sm" data-action="end-trial">무료기간 해제</button>
         </div>
-        <p class="note">무료기간 해제를 누르면 무료체험 공지가 내려가고, 아래 고객센터의 공지가 다시 표시됩니다. 공지 문구는 그대로 보관됩니다.</p>
+        <p class="note">무료기간 해제를 누르면 무료체험 팝업이 내려가고, 지금 올라가 있는 오픈 기념 할인 팝업이 다시 뜹니다. 아래 문구는 그대로 보관됩니다.</p>
       </div>`;
     }
     return `<div class="trial-panel">
-      <p><span class="badge badge-no">무료체험 아님</span> 고객센터에 일반 공지가 표시되고 있습니다.</p>
+      <p><span class="badge badge-no">무료체험 아님</span> 접속할 때 오픈 기념 할인 팝업이 뜨고 있습니다.</p>
       <div class="trial-actions">
         <input type="date" class="paid-date" id="trial-until" value="${suggested}" min="${Store.today()}" aria-label="무료체험 종료일">
         <button type="button" class="btn btn-dark btn-sm" data-action="start-trial">무료체험 시작 (기본 2개월)</button>
       </div>
-      <p class="note">시작하면 종료일까지 고객센터 공지 자리에 아래 무료체험 공지가 대신 표시됩니다. 종료일이 지나도 자동으로 내려가지 않으니, 때가 되면 "무료기간 해제"를 눌러 주세요.</p>
+      <p class="note">시작하면 오픈 기념 할인 팝업 대신 아래 문구로 된 무료체험 팝업이 뜹니다. 종료일이 지나도 자동으로 내려가지 않으니, 때가 되면 "무료기간 해제"를 눌러 주세요.</p>
     </div>`;
   }
 
@@ -1450,16 +1443,16 @@
       if (!isAdmin()) return toast('권한이 없습니다.');
       const until = (document.getElementById('trial-until') || {}).value;
       if (!until || until < Store.today()) return toast('무료체험 종료일을 오늘 이후 날짜로 선택해 주세요.');
-      if (!confirm(`${until}까지 무료체험 기간으로 공지할까요?\n고객센터 공지 자리에 무료체험 공지가 표시됩니다.`)) return;
+      if (!confirm(`${until}까지 무료체험 기간으로 공지할까요?\n접속할 때 뜨는 공지 팝업이 무료체험 안내로 바뀝니다.`)) return;
       await Store.saveSettings({ trialUntil: until });
       toast('무료체험 공지를 시작했습니다.');
       refresh();
     },
     'end-trial': async () => {
       if (!isAdmin()) return toast('권한이 없습니다.');
-      if (!confirm('무료체험 기간을 해제할까요?\n무료체험 공지가 내려가고 원래 공지가 다시 표시됩니다.')) return;
+      if (!confirm('무료체험 기간을 해제할까요?\n무료체험 팝업이 내려가고 원래 오픈 기념 할인 팝업이 다시 뜹니다.')) return;
       await Store.saveSettings({ trialUntil: '' });
-      toast('무료체험 기간을 해제했습니다. 원래 공지가 표시됩니다.');
+      toast('무료체험 기간을 해제했습니다. 원래 공지 팝업이 다시 뜹니다.');
       refresh();
     },
     'reset-settings': async () => {
@@ -1744,11 +1737,27 @@
   /* ---------- 오픈 기념 공지 팝업 ---------- */
   const eventPop = document.getElementById('eventPop');
   function hideEventPop() { eventPop.hidden = true; document.body.classList.remove('event-open'); }
+  // 무료체험 팝업 본문: # 줄은 소제목, * 줄은 목록, 나머지는 문단. {종료일}은 실제 날짜로
+  function trialPopHtml() {
+    const text = S.trialNotice.split('{종료일}').join(S.trialUntil);
+    return lines(text).map(l => l.startsWith('#') ? `<h3 class="event-sub">${esc(l.replace(/^#+\s*/, ''))}</h3>`
+      : /^[*-]\s+/.test(l) ? `<p class="event-note bullet">${esc(l.replace(/^[*-]\s+/, ''))}</p>` : `<p class="event-note">${esc(l)}</p>`).join('');
+  }
   function showEventPop() {
-    if (!eventPop || Store.today() > NOTICE_UNTIL) return;
+    if (!eventPop) return;
+    const trial = trialOn();
+    if (!trial && Store.today() > NOTICE_UNTIL) return;
     let hiddenUntil = '';
     try { hiddenUntil = localStorage.getItem(NOTICE_KEY) || ''; } catch (e) { /* 저장이 막힌 환경 */ }
     if (hiddenUntil >= Store.today()) return;
+    const trialBox = document.getElementById('eventTrial'), discountBox = document.getElementById('eventDiscount');
+    if (trial) {
+      document.getElementById('trialTitle').innerHTML = nl2br(S.trialNoticeTitle);
+      document.getElementById('trialBody').innerHTML = trialPopHtml();
+      document.getElementById('trialUntil').textContent = S.trialUntil;
+    }
+    trialBox.hidden = !trial;
+    discountBox.hidden = trial;
     eventPop.hidden = false;
     document.body.classList.add('event-open');
   }
