@@ -1091,17 +1091,11 @@
     ]]
   ];
 
-  // 무료체험 상태와 시작·해제 버튼 (저장하기와 별개로 바로 반영)
-  // 날짜 문자열(YYYY-MM-DD)에 n개월 더하기
-  function addMonths(ymd, n) {
-    const d = new Date(ymd + 'T00:00:00'); d.setMonth(d.getMonth() + n);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-  // 무료체험 기간 설정, 미리보기, 시작·해제 버튼 (저장하기와 별개로 바로 반영)
+  // 무료체험 기간(시작일~종료일) 설정, 미리보기, 시작·해제 버튼 (저장하기와 별개로 바로 반영)
   function trialPanel() {
     const on = trialOn();
-    const start = on && S.trialStart ? S.trialStart : Store.today();
-    const until = on ? S.trialUntil : addMonths(Store.today(), 2);
+    const start = on ? S.trialStart : '';
+    const until = on ? S.trialUntil : '';
     const over = on && S.trialUntil < Store.today();
     const status = on
       ? `<span class="badge ${over ? 'badge-wait' : 'badge-ok'}">${over ? '종료일 지남' : '무료체험 공지 중'}</span> 접속할 때 뜨는 공지 팝업이 무료체험 안내로 표시되고 있습니다. 기간 <b>${esc(S.trialStart || '')}${S.trialStart ? ' ~ ' : ''}${esc(S.trialUntil)}</b>${over ? ' (종료일이 지났습니다. 아래 버튼으로 해제해 주세요)' : ''}`
@@ -1110,10 +1104,8 @@
       <p>${status}</p>
       <div class="trial-period">
         <label>시작일 <input type="date" class="paid-date" id="trial-start" value="${esc(start)}"></label>
+        <span class="trial-tilde">~</span>
         <label>종료일 <input type="date" class="paid-date" id="trial-until" value="${esc(until)}"></label>
-        <span class="trial-quick">기간 빠른 선택:
-          ${[1, 2, 3, 6].map(n => `<button type="button" class="btn btn-soft btn-sm" data-action="trial-months" data-months="${n}">${n}개월</button>`).join(' ')}
-        </span>
       </div>
       <div class="trial-actions">
         <button type="button" class="btn btn-soft btn-sm" data-action="preview-trial">팝업 미리보기</button>
@@ -1124,7 +1116,7 @@
       </div>
       <p class="note">${on
         ? '무료기간 해제를 누르면 무료체험 팝업이 내려가고, 지금 올라가 있는 오픈 기념 할인 팝업이 다시 뜹니다. 아래 문구는 그대로 보관됩니다.'
-        : '시작하면 오픈 기념 할인 팝업 대신 아래 문구로 된 무료체험 팝업이 뜹니다. 종료일이 지나도 자동으로 내려가지 않으니, 때가 되면 "무료기간 해제"를 눌러 주세요.'}
+        : '시작일과 종료일을 고르고 시작하면 오픈 기념 할인 팝업 대신 아래 문구로 된 무료체험 팝업이 뜹니다. 종료일이 지나도 자동으로 내려가지 않으니, 때가 되면 "무료기간 해제"를 눌러 주세요.'}
         미리보기는 아래 문구 칸에 적힌 내용(저장 전이라도)과 위 기간으로 팝업을 보여 줍니다.</p>
     </div>`;
   }
@@ -1451,23 +1443,20 @@
       toast('기본 파일로 되돌렸습니다.');
       refresh();
     },
-    'trial-months': el => {
-      const start = (document.getElementById('trial-start') || {}).value || Store.today();
-      const untilEl = document.getElementById('trial-until');
-      if (untilEl) untilEl.value = addMonths(start, Number(el.dataset.months));
-    },
     'preview-trial': () => {
       const v = trialDraft();
-      if (!v.until) return toast('종료일을 선택해 주세요.');
+      if (!v.start || !v.until) return toast('시작일과 종료일을 먼저 선택해 주세요.');
+      if (v.start > v.until) return toast('시작일이 종료일보다 늦을 수 없습니다.');
       fillTrialPop(v);
       openEventPop(true);
     },
     'start-trial': async () => {
       if (!isAdmin()) return toast('권한이 없습니다.');
       const { start, until } = trialDraft();
-      if (!until || until < Store.today()) return toast('무료체험 종료일을 오늘 이후 날짜로 선택해 주세요.');
-      if (start && start > until) return toast('시작일이 종료일보다 늦을 수 없습니다.');
-      if (!confirm(`${start ? start + ' ~ ' : ''}${until} 무료체험 기간으로 공지할까요?\n접속할 때 뜨는 공지 팝업이 무료체험 안내로 바뀝니다.`)) return;
+      if (!start || !until) return toast('시작일과 종료일을 모두 선택해 주세요.');
+      if (start > until) return toast('시작일이 종료일보다 늦을 수 없습니다.');
+      if (until < Store.today()) return toast('종료일은 오늘 이후 날짜로 선택해 주세요.');
+      if (!confirm(`${start} ~ ${until} 무료체험 기간으로 공지할까요?\n접속할 때 뜨는 공지 팝업이 무료체험 안내로 바뀝니다.`)) return;
       await Store.saveSettings({ trialStart: start, trialUntil: until });
       toast(trialOn() ? '무료체험 기간을 바꿨습니다.' : '무료체험 공지를 시작했습니다.');
       refresh();
@@ -1777,7 +1766,7 @@
     document.getElementById('trialTitle').innerHTML = nl2br(title);
     document.getElementById('trialBody').innerHTML = lines(body).map(l => l.startsWith('#') ? `<h3 class="event-sub">${esc(l.replace(/^#+\s*/, ''))}</h3>`
       : /^[*-]\s+/.test(l) ? `<p class="event-note bullet">${esc(l.replace(/^[*-]\s+/, ''))}</p>` : `<p class="event-note">${esc(l)}</p>`).join('');
-    document.getElementById('trialPeriod').textContent = start ? `${start} ~ ${until}` : `${until}까지`;
+    document.getElementById('trialPeriod').textContent = start ? `${start} ~ ${until}` : `${until}까지`; // 예전에 시작일 없이 저장된 경우 대비
   }
   function openEventPop(trial) {
     document.getElementById('eventTrial').hidden = !trial;

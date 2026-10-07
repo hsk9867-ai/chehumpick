@@ -50,7 +50,7 @@ window.CHEHUMPICK_DEFAULTS = {
   // 아래 무료체험 안내 팝업이 뜹니다. 관리자 페이지 > 사이트 설정 > 무료체험 공지에서 시작·해제합니다. {시작일}·{종료일}은 실제 날짜로 바뀝니다.
   trialStart: '',
   trialUntil: '',
-  trialNoticeTitle: '2개월\n무료 체험',
+  trialNoticeTitle: '무료 체험\n기간 안내',
   trialNotice: [
     '체험픽이 새롭게 오픈했습니다. 서비스를 부담 없이 시작하실 수 있도록 {종료일}까지 무료체험 기간으로 운영합니다.',
     '# 무료체험 기간 혜택',
