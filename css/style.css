@@ -356,6 +356,10 @@ td a.btn { color: var(--ink); text-decoration: none; }
 .trial-panel .note { margin-top: 8px; }
 .trial-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .trial-actions input { width: auto; }
+.trial-period { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 12px; font-size: 14px; }
+.trial-period label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.trial-period input { width: auto; }
+.trial-quick { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); }
 .doc .bullet { padding-left: 16px; position: relative; }
 .doc .bullet::before { content: "•"; position: absolute; left: 2px; }
 .faq-title { margin-bottom: 4px; }
